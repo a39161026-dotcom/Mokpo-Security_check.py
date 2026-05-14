@@ -7,14 +7,18 @@
         body { font-family: 맑은 고딕; background: #0D1B2A; color: white; text-align: center; padding: 50px; }
         h1 { color: #0A9396; font-size: 2.5em; }
         p { color: #94D2BD; }
-        .upload-box { background: #132238; padding: 30px; border-radius: 10px; display: inline-block; margin-top: 30px; min-width: 400px; }
-        label { display: block; color: #94D2BD; margin-bottom: 5px; text-align: left; }
-        input[type="password"], input[type="file"] { width: 100%; padding: 8px; margin-bottom: 15px; background: #1B2838; border: 1px solid #0A9396; border-radius: 5px; color: white; box-sizing: border-box; }
-        button { background: #0A9396; color: white; border: none; padding: 10px 30px; border-radius: 5px; cursor: pointer; font-size: 1em; width: 100%; }
+        .box { background: #132238; padding: 30px; border-radius: 10px; display: inline-block; margin: 15px; min-width: 400px; text-align: left; }
+        label { display: block; color: #94D2BD; margin-bottom: 5px; }
+        input[type="password"], input[type="text"] { width: 100%; padding: 8px; margin-bottom: 15px; background: #1B2838; border: 1px solid #0A9396; border-radius: 5px; color: white; box-sizing: border-box; }
+        input[type="file"] { color: white; margin-bottom: 15px; }
+        button { background: #0A9396; color: white; border: none; padding: 10px 30px; border-radius: 5px; cursor: pointer; font-size: 1em; width: 100%; margin-top: 5px; }
         button:hover { background: #094d4f; }
-        .result { margin-top: 30px; padding: 20px; border-radius: 10px; display: inline-block; min-width: 400px; }
+        .watch-btn { background: #EE9B00; }
+        .watch-btn:hover { background: #cc8400; }
+        .result { margin-top: 20px; padding: 20px; border-radius: 10px; }
         .safe { background: #1A3D2B; border: 1px solid #0A9396; }
         .danger { background: #3D1A1A; border: 1px solid #ff4444; }
+        .watching { background: #1A3A2A; border: 1px solid #EE9B00; padding: 15px; border-radius: 10px; margin-top: 20px; }
         .filename { font-size: 1.2em; font-weight: bold; }
         .status { font-size: 1.5em; margin-top: 10px; }
     </style>
@@ -23,23 +27,44 @@
     <h1>🔐 파일 보안 스캐너</h1>
     <p>VirusTotal API 기반 실시간 악성코드 탐지 시스템</p>
 
-    <div class="upload-box">
+    <!-- 파일 스캔 -->
+    <div class="box">
+        <h3 style="color:#0A9396">🔍 파일 직접 스캔</h3>
         <form method="post" enctype="multipart/form-data">
             {% csrf_token %}
+            <input type="hidden" name="action" value="scan">
             <label>🔑 VirusTotal API 키</label>
             {{ form.api_key }}
             <label>📁 파일 선택</label>
             {{ form.file }}
             <button type="submit">🔍 스캔 시작</button>
         </form>
+
+        {% if result and not result.watch %}
+        <div class="result {% if result.is_safe %}safe{% else %}danger{% endif %}">
+            <div class="filename">📄 {{ result.filename }}</div>
+            <div class="status">{{ result.status }}</div>
+        </div>
+        {% endif %}
     </div>
 
-    {% if result %}
-    <div class="result {% if result.is_safe %}safe{% else %}danger{% endif %}">
-        <div class="filename">📄 {{ result.filename }}</div>
-        <div class="status">{{ result.status }}</div>
+    <!-- 실시간 감시 -->
+    <div class="box">
+        <h3 style="color:#EE9B00">👁️ 실시간 폴더 감시</h3>
+        {% if is_watching %}
+        <div class="watching">
+            <p>✅ 감시 중... watch_folder 폴더에 파일을 넣으면 자동 스캔됩니다!</p>
+        </div>
+        {% else %}
+        <form method="post">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="watch">
+            <label>🔑 VirusTotal API 키</label>
+            <input type="password" name="api_key" placeholder="API 키를 입력하세요">
+            <button type="submit" class="watch-btn">👁️ 감시 시작</button>
+        </form>
+        {% endif %}
     </div>
-    {% endif %}
 
 </body>
 </html>
