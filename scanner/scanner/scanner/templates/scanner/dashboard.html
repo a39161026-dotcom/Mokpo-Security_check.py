@@ -1,0 +1,63 @@
+<!-- 
+scanner/dashboard.html
+담당: 김성환 | 로그 조회 페이지 레이아웃
+-->
+
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🛡️ 보안 로그 대시보드</title>
+    <!-- 부트스트랩으로 깔끔한 디자인 적용 -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body class="bg-light">
+
+    <div class="container mt-5">
+        <h2 class="mb-4">📂 파일 보안 스캔 및 자동 정리 기록</h2>
+
+        <div class="card shadow">
+            <div class="card-body">
+                <table class="table table-hover">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>스캔 일시</th>
+                            <th>파일명</th>
+                            <th>보안 상태</th>
+                            <th>탐지율</th>
+                            <th>압축</th>
+                            <th>최종 저장 경로</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for log in logs %}
+                        <tr>
+                            <td>{{ log.created_at|date:"Y-m-d H:i:s" }}</td>
+                            <td><strong>{{ log.file_name }}</strong></td>
+                            <td>
+                                <span class="badge 
+                                    {% if log.status == 'clean' %}bg-success
+                                    {% elif log.status == 'malicious' %}bg-danger
+                                    {% else %}bg-warning text-dark{% endif %}">
+                                    {{ log.get_status_display }}
+                                </span>
+                            </td>
+                            <td>{{ log.detections }} / {{ log.total_engines }}</td>
+                            <td>{{ log.is_compressed|yesno:"✅,❌" }}</td>
+                            <td><small class="text-muted">{{ log.saved_path }}</small></td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="6" class="text-center text-muted">기록된 스캔 데이터가 없습니다.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <p class="text-end mt-3 text-muted">담당자: 김성환</p>
+    </div>
+
+</body>
+</html>
