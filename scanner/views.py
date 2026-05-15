@@ -5,6 +5,7 @@ import threading
 from django.shortcuts import render
 from .forms import UploadFileForm
 from .watcher import start_watching
+from .models import ScanLog
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import security as sc
@@ -38,6 +39,16 @@ def index(request):
                     sc._SAVED_API_KEY = api_key
                     is_safe = sc.check_security(file_path)
 
+                    status = 'clean' if is_safe else 'malicious'
+
+                    # DB에 스캔 기록 저장
+                    ScanLog.objects.create(
+                        filename=uploaded_file.name,
+                        status=status,
+                        detections=0,
+                        total=0
+                    )
+
                     result = {
                         'filename': uploaded_file.name,
                         'status': '✅ 안전' if is_safe else '🚨 악성 — 격리 완료',
@@ -58,8 +69,12 @@ def index(request):
                 is_watching = True
                 result = {'watch': True, 'watch_dir': watch_dir}
 
+    # 스캔 히스토리 최근 10개
+    logs = ScanLog.objects.order_by('-scanned_at')[:10]
+
     return render(request, 'scanner/index.html', {
         'form': form,
         'result': result,
-        'is_watching': is_watching
+        'is_watching': is_watching,
+        'logs': logs
     })
