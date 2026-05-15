@@ -1,0 +1,34 @@
+# 가상환경
+.venv/
+venv/
+env/
+
+# PyCharm 설정
+.idea/
+
+# 파이썬 캐시
+__pycache__/
+*.pyc
+*.pyo
+
+# 테스트 파일
+test_files/
+
+# 격리/이동 결과 폴더
+quarantine/
+safe_files/
+watch_folder/
+
+# 업로드 파일
+media/
+
+# 로그
+program_log.xlsx
+security_report.json
+
+# DB
+db.sqlite3
+
+# 환경변수
+.env
+secrets.py
