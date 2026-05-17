@@ -40,13 +40,19 @@ def index(request):
                     is_safe = sc.check_security(file_path)
 
                     status = 'clean' if is_safe else 'malicious'
+                    saved = file_path if is_safe else os.path.join(
+                        os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+                        'quarantine', uploaded_file.name
+                    )
 
                     # DB에 스캔 기록 저장
                     ScanLog.objects.create(
-                        filename=uploaded_file.name,
+                        file_name=uploaded_file.name,
                         status=status,
                         detections=0,
-                        total=0
+                        total_engines=75,
+                        is_compressed=False,
+                        saved_path=saved
                     )
 
                     result = {
@@ -70,7 +76,7 @@ def index(request):
                 result = {'watch': True, 'watch_dir': watch_dir}
 
     # 스캔 히스토리 최근 10개
-    logs = ScanLog.objects.order_by('-scanned_at')[:10]
+    logs = ScanLog.objects.order_by('-created_at')[:10]
 
     return render(request, 'scanner/index.html', {
         'form': form,
@@ -78,3 +84,9 @@ def index(request):
         'is_watching': is_watching,
         'logs': logs
     })
+
+
+# 📊 성환님 대시보드 화면 연동 함수 추가완료!
+def dashboard(request):
+    logs = ScanLog.objects.order_by('-created_at')
+    return render(request, 'scanner/dashboard.html', {'logs': logs})

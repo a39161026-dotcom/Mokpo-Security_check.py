@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🛡️ 보안 로그 대시보드</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { background: #0D1B2A; color: white; }
+        .navbar { background: #0A9396 !important; }
+        .card { background: #132238; border: 1px solid #1E3A4A; color: white; }
+        .card-header { background: #0A9396; color: white; }
+        .stat-card { background: #132238; border-radius: 12px; padding: 25px; text-align: center; border: 1px solid #1E3A4A; }
+        .stat-number { font-size: 3em; font-weight: bold; }
+        .stat-label { color: #94D2BD; font-size: 0.95em; margin-top: 5px; }
+        table { color: white; }
+        .table-dark th { background: #0A9396; }
+        td { color: #ddd; vertical-align: middle; }
+        tr:hover td { background: #1B2838; }
+        .btn-back { background: #132238; color: #94D2BD; border: 1px solid #0A9396; }
+        .btn-back:hover { background: #0A9396; color: white; }
+        .section-title { color: #0A9396; font-size: 1.2em; font-weight: bold; margin-bottom: 15px; }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-dark mb-4">
+        <div class="container">
+            <span class="navbar-brand fw-bold">🛡️ 파일 보안 스캐너</span>
+            <a href="/" class="btn btn-back btn-sm">← 스캐너로 돌아가기</a>
+        </div>
+    </nav>
+
+    <div class="container">
+        <h2 class="mb-4">📂 파일 보안 스캔 및 자동 정리 기록</h2>
+
+        <!-- 통계 카드 -->
+        <div class="row g-3 mb-4">
+            <div class="col-md-3">
+                <div class="stat-card">
+                    <div class="stat-number" style="color:#94D2BD">{{ logs|length }}</div>
+                    <div class="stat-label">📋 전체 스캔</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stat-card">
+                    <div class="stat-number" style="color:#4CAF50">
+                        {% with clean_count=0 %}
+                        {% for log in logs %}{% if log.status == 'clean' %}{{ forloop.counter }}{% endif %}{% endfor %}
+                        {% endwith %}
+                    </div>
+                    <div class="stat-label">✅ 안전 파일</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stat-card">
+                    <div class="stat-number" style="color:#ff6b6b">
+                        {% for log in logs %}{% if log.status == 'malicious' %}{{ forloop.counter }}{% endif %}{% endfor %}
+                    </div>
+                    <div class="stat-label">🚨 악성 탐지</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stat-card">
+                    <div class="stat-number" style="color:#EE9B00">75</div>
+                    <div class="stat-label">🔍 VT 검사 엔진</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 스캔 기록 테이블 -->
+        <div class="card shadow">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <strong>📋 전체 스캔 기록</strong>
+                <span class="badge bg-light text-dark">총 {{ logs|length }}건</span>
+            </div>
+            <div class="card-body p-0">
+                <table class="table table-hover mb-0">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>스캔 일시</th>
+                            <th>파일명</th>
+                            <th>보안 상태</th>
+                            <th>탐지율</th>
+                            <th>압축</th>
+                            <th>최종 저장 경로</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for log in logs %}
+                        <tr>
+                            <td>{{ log.created_at|date:"Y-m-d H:i:s" }}</td>
+                            <td><strong>{{ log.file_name }}</strong></td>
+                            <td>
+                                <span class="badge {% if log.status == 'clean' %}bg-success{% elif log.status == 'malicious' %}bg-danger{% else %}bg-warning text-dark{% endif %}">
+                                    {{ log.get_status_display }}
+                                </span>
+                            </td>
+                            <td>{{ log.detections }} / {{ log.total_engines }}</td>
+                            <td>{{ log.is_compressed|yesno:"✅,❌" }}</td>
+                            <td><small class="text-muted">{{ log.saved_path|default:"없음" }}</small></td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="6" class="text-center text-muted py-4">기록된 스캔 데이터가 없습니다.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <p class="text-end mt-3 text-muted">담당자: 김성환</p>
+    </div>
+</body>
+</html>

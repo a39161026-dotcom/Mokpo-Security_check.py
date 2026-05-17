@@ -7,31 +7,45 @@
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { font-family: 맑은 고딕; background: #0D1B2A; color: white; padding: 40px 20px; }
         h1 { color: #0A9396; font-size: 2.5em; text-align: center; margin-bottom: 10px; }
-        .subtitle { color: #94D2BD; text-align: center; margin-bottom: 40px; font-size: 1.1em; }
+        .subtitle { color: #94D2BD; text-align: center; margin-bottom: 20px; font-size: 1.1em; }
+
+        /* 소개 배너 */
+        .intro { max-width: 860px; margin: 0 auto 40px auto; background: #132238; border-radius: 12px; padding: 25px 30px; border-left: 4px solid #0A9396; }
+        .intro h2 { color: #0A9396; font-size: 1.1em; margin-bottom: 12px; }
+        .intro p { color: #94D2BD; font-size: 0.95em; line-height: 1.7; margin-bottom: 15px; }
+        .intro-grid { display: flex; gap: 15px; flex-wrap: wrap; margin-top: 15px; }
+        .intro-item { background: #1B2838; border-radius: 8px; padding: 12px 16px; flex: 1; min-width: 160px; }
+        .intro-item .icon { font-size: 1.5em; margin-bottom: 6px; }
+        .intro-item .title { color: #0A9396; font-size: 0.9em; font-weight: bold; margin-bottom: 4px; }
+        .intro-item .desc { color: #94D2BD; font-size: 0.82em; line-height: 1.5; }
+
+        /* 사용법 */
+        .howto { max-width: 860px; margin: 0 auto 40px auto; }
+        .howto h2 { color: #0A9396; font-size: 1.1em; margin-bottom: 15px; }
+        .steps { display: flex; gap: 10px; flex-wrap: wrap; }
+        .step { background: #132238; border-radius: 10px; padding: 15px; flex: 1; min-width: 150px; text-align: center; border-top: 3px solid #0A9396; }
+        .step-num { background: #0A9396; color: white; width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 8px auto; font-size: 0.9em; font-weight: bold; }
+        .step p { color: #94D2BD; font-size: 0.85em; line-height: 1.5; }
 
         .top-grid { display: flex; gap: 20px; justify-content: center; flex-wrap: wrap; margin-bottom: 30px; }
         .box { background: #132238; padding: 30px; border-radius: 12px; width: 420px; }
         .box h3 { margin-bottom: 20px; font-size: 1.2em; }
-
         label { display: block; color: #94D2BD; margin-bottom: 6px; font-size: 0.9em; }
         input[type="password"] { width: 100%; padding: 10px; margin-bottom: 15px; background: #1B2838; border: 1px solid #0A9396; border-radius: 6px; color: white; font-size: 0.95em; }
         input[type="file"] { color: #94D2BD; margin-bottom: 15px; width: 100%; }
-
         .btn { width: 100%; padding: 12px; border: none; border-radius: 6px; cursor: pointer; font-size: 1em; font-weight: bold; margin-top: 5px; }
         .btn-scan { background: #0A9396; color: white; }
         .btn-scan:hover { background: #077a7d; }
         .btn-watch { background: #EE9B00; color: white; }
         .btn-watch:hover { background: #cc8400; }
-
+        .btn-dashboard { background: #132238; color: #94D2BD; border: 1px solid #0A9396; padding: 8px 20px; border-radius: 6px; text-decoration: none; float: right; font-size: 0.9em; }
+        .btn-dashboard:hover { background: #0A9396; color: white; }
         .result { margin-top: 20px; padding: 20px; border-radius: 10px; text-align: center; }
         .safe { background: #1A3D2B; border: 1px solid #0A9396; }
         .danger { background: #3D1A1A; border: 1px solid #ff4444; }
         .result .filename { font-size: 1.1em; font-weight: bold; margin-bottom: 8px; }
         .result .status { font-size: 1.6em; }
-
         .watching { background: #1A3A2A; border: 1px solid #EE9B00; padding: 15px; border-radius: 10px; text-align: center; color: #EE9B00; }
-
-        /* 히스토리 */
         .history { max-width: 860px; margin: 0 auto; }
         .history h3 { color: #0A9396; margin-bottom: 15px; font-size: 1.2em; }
         table { width: 100%; border-collapse: collapse; background: #132238; border-radius: 12px; overflow: hidden; }
@@ -47,6 +61,61 @@
 <body>
     <h1>🔐 파일 보안 스캐너</h1>
     <p class="subtitle">VirusTotal API 기반 실시간 악성코드 탐지 시스템</p>
+
+    <!-- 시스템 소개 -->
+    <div class="intro">
+        <h2>🛡️ 이 시스템은 무엇인가요?</h2>
+        <p>본 시스템은 전 세계 75개 백신 엔진을 보유한 <strong style="color:#0A9396">VirusTotal API</strong>를 활용하여 업로드된 파일의 악성코드 여부를 실시간으로 탐지합니다. 단순 확장자 기반 필터링이 아닌 <strong style="color:#0A9396">SHA256 해시 기반 데이터 분석</strong>으로 높은 정확도의 보안 검사를 제공합니다.</p>
+        <div class="intro-grid">
+            <div class="intro-item">
+                <div class="icon">🔑</div>
+                <div class="title">SHA256 해시 분석</div>
+                <div class="desc">파일의 고유 지문을 계산하여 VT DB와 대조</div>
+            </div>
+            <div class="intro-item">
+                <div class="icon">🌐</div>
+                <div class="title">75개 엔진 검사</div>
+                <div class="desc">전 세계 백신 엔진이 동시에 파일을 분석</div>
+            </div>
+            <div class="intro-item">
+                <div class="icon">🚨</div>
+                <div class="title">자동 격리</div>
+                <div class="desc">악성 탐지 즉시 quarantine 폴더로 분리</div>
+            </div>
+            <div class="intro-item">
+                <div class="icon">👁️</div>
+                <div class="title">실시간 감시</div>
+                <div class="desc">폴더 감시 중 새 파일 추가 시 자동 스캔</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 사용 방법 -->
+    <div class="howto">
+        <h2>📖 사용 방법</h2>
+        <div class="steps">
+            <div class="step">
+                <div class="step-num">1</div>
+                <p>VirusTotal 사이트에서 <strong>API 키</strong> 발급</p>
+            </div>
+            <div class="step">
+                <div class="step-num">2</div>
+                <p>아래 입력란에 <strong>API 키</strong> 입력</p>
+            </div>
+            <div class="step">
+                <div class="step-num">3</div>
+                <p>검사할 <strong>파일 선택</strong> 후 스캔 시작</p>
+            </div>
+            <div class="step">
+                <div class="step-num">4</div>
+                <p>결과 확인 — 악성 파일은 <strong>자동 격리</strong></p>
+            </div>
+            <div class="step">
+                <div class="step-num">5</div>
+                <p>전체 기록은 <strong>대시보드</strong>에서 확인</p>
+            </div>
+        </div>
+    </div>
 
     <div class="top-grid">
         <!-- 파일 직접 스캔 -->
@@ -92,7 +161,7 @@
 
     <!-- 스캔 히스토리 -->
     <div class="history">
-        <h3>📋 최근 스캔 기록</h3>
+        <h3>📋 최근 스캔 기록 <a href="/dashboard/" class="btn-dashboard">전체 기록 보기 →</a></h3>
         {% if logs %}
         <table>
             <thead>
@@ -105,7 +174,7 @@
             <tbody>
                 {% for log in logs %}
                 <tr>
-                    <td>📄 {{ log.filename }}</td>
+                    <td>📄 {{ log.file_name }}</td>
                     <td>
                         {% if log.status == 'clean' %}
                         <span class="badge-safe">✅ 안전</span>
@@ -113,7 +182,7 @@
                         <span class="badge-danger">🚨 악성</span>
                         {% endif %}
                     </td>
-                    <td>{{ log.scanned_at|date:"Y-m-d H:i:s" }}</td>
+                    <td>{{ log.created_at|date:"Y-m-d H:i:s" }}</td>
                 </tr>
                 {% endfor %}
             </tbody>
