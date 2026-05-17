@@ -1,7 +1,19 @@
 import os
-import security as sc  # 성헌님 엔진
-import file_mover as fm  # 지민님 모듈
-import data_logger as dl  # 성환님 모듈
+
+try:
+    import security as sc
+except ImportError:
+    sc = None
+
+try:
+    import file_mover as fm
+except ImportError:
+    fm = None
+
+try:
+    import data_logger as dl
+except ImportError:
+    dl = None
 
 # 1. 설정: 테스트할 폴더 경로
 TARGET_DIR = "./test_files"
@@ -12,11 +24,10 @@ def setup_test_environment():
     if not os.path.exists(TARGET_DIR):
         os.makedirs(TARGET_DIR)
 
-    # 성헌님 엔진이 잡을 수 있는 패턴을 가진 가짜 악성 파일들
     samples = {
-        "malware_01.txt": "X5O!P%@AP[4\PZX54(P^)7CC)7}$EICAR-STANDARD-ANTIVIRUS-TEST-FILE!$H+H*",  # EICAR 테스트 문자열
+        "malware_01.txt": r"X5O!P%@AP[4\PZX54(P^)7CC)7}$EICAR-STANDARD-ANTIVIRUS-TEST-FILE!$H+H*",
         "clean_doc.txt": "이 파일은 안전한 일반 문서 내용입니다.",
-        "suspicious_script.py": "import os; os.system('format c:')",  # 위험해 보이는 패턴
+        "suspicious_script.py": "import os; os.system('format c:')",
         "normal_photo.png": "이미지 데이터 샘플"
     }
 
@@ -27,10 +38,12 @@ def setup_test_environment():
 
 
 def main():
-    # 환경 세팅
+    if not sc:
+        print("security 모듈 없음")
+        return
+
     setup_test_environment()
 
-    # 폴더 내 파일 목록 가져오기
     files = [os.path.join(TARGET_DIR, f) for f in os.listdir(TARGET_DIR) if os.path.isfile(os.path.join(TARGET_DIR, f))]
     safe_files = []
 
@@ -40,22 +53,20 @@ def main():
     for f_path in files:
         f_name = os.path.basename(f_path)
 
-        # 1. 성헌 엔진 스캔
         is_safe = sc.check_security(f_path)
 
-        # 2. 성환 로그 저장 (실시간)
         status = "안전" if is_safe else "위험(격리)"
-        dl.save_log(f_name, status)
+        if dl:
+            dl.save_log(f_name, status)
 
         if is_safe:
             print(f"[PASS] {f_name} - 안전함")
             safe_files.append(f_path)
         else:
             print(f"[BLOCK] {f_name} - 악성코드 탐지! 격리 조치합니다.")
-            sc.quarantine(f_path)  # 성헌님의 격리 함수
+            sc.quarantine(f_path)
 
-    # 3. 지민 이동 모듈 실행 (안전한 파일만 이동)
-    if safe_files:
+    if safe_files and fm:
         fm.run_file_mover(safe_files)
 
     print("-" * 50)
