@@ -1,6 +1,7 @@
-django
-requests
-watchdog
-pandas
-openpyxl
-gunicorn
+Django==6.0.5
+requests==2.32.3
+watchdog==6.0.0
+pandas==2.2.3
+openpyxl==3.1.5
+gunicorn==23.0.0
+whitenoise==6.12.0
