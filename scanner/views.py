@@ -22,6 +22,10 @@ def index(request):
     folder_form = FolderScanForm()
     folder_results = None
 
+    if not request.session.session_key:
+        request.session.create()
+    session_id = request.session.session_key
+
     if request.method == 'POST':
         action = request.POST.get('action')
 
@@ -48,6 +52,7 @@ def index(request):
                     )
 
                     ScanLog.objects.create(
+                        session_id=session_id,
                         file_name=uploaded_file.name,
                         status=status,
                         detections=0,
@@ -70,8 +75,7 @@ def index(request):
             if folder_form.is_valid():
                 api_key = folder_form.cleaned_data['api_key']
                 folder_path = folder_form.cleaned_data['folder_path'].strip()
-                folder_path =os.path.normpath(folder_path)
-                
+                folder_path = os.path.normpath(folder_path)
 
                 if os.path.exists(folder_path):
                     sc._SAVED_API_KEY = api_key
@@ -88,6 +92,7 @@ def index(request):
                         status = 'clean' if is_safe else 'malicious'
 
                         ScanLog.objects.create(
+                            session_id=session_id,
                             file_name=filename,
                             status=status,
                             detections=0,
@@ -118,7 +123,7 @@ def index(request):
                 is_watching = True
                 result = {'watch': True, 'watch_dir': watch_dir}
 
-    logs = ScanLog.objects.order_by('-created_at')[:10]
+    logs = ScanLog.objects.filter(session_id=session_id).order_by('-created_at')[:10]
 
     return render(request, 'scanner/index.html', {
         'form': form,
@@ -130,7 +135,10 @@ def index(request):
     })
 
 def dashboard(request):
-    logs = ScanLog.objects.order_by('-created_at')
+    if not request.session.session_key:
+        request.session.create()
+    session_id = request.session.session_key
+    logs = ScanLog.objects.filter(session_id=session_id).order_by('-created_at')
     clean_count = logs.filter(status='clean').count()
     malicious_count = logs.filter(status='malicious').count()
     return render(request, 'scanner/dashboard.html', {
