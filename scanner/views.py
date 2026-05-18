@@ -51,15 +51,25 @@ def index(request):
                         'quarantine', uploaded_file.name
                     )
 
-                    ScanLog.objects.create(
-                        session_id=session_id,
-                        file_name=uploaded_file.name,
-                        status=status,
-                        detections=0,
-                        total_engines=75,
-                        is_compressed=False,
-                        saved_path=saved
-                    )
+                    try:
+                        ScanLog.objects.create(
+                            session_id=session_id,
+                            file_name=uploaded_file.name,
+                            status=status,
+                            detections=0,
+                            total_engines=75,
+                            is_compressed=False,
+                            saved_path=saved
+                        )
+                    except Exception:
+                        ScanLog.objects.create(
+                            file_name=uploaded_file.name,
+                            status=status,
+                            detections=0,
+                            total_engines=75,
+                            is_compressed=False,
+                            saved_path=saved
+                        )
 
                     result = {
                         'filename': uploaded_file.name,
@@ -91,15 +101,25 @@ def index(request):
                         is_safe = sc.check_security(file_path)
                         status = 'clean' if is_safe else 'malicious'
 
-                        ScanLog.objects.create(
-                            session_id=session_id,
-                            file_name=filename,
-                            status=status,
-                            detections=0,
-                            total_engines=75,
-                            is_compressed=False,
-                            saved_path=file_path
-                        )
+                        try:
+                            ScanLog.objects.create(
+                                session_id=session_id,
+                                file_name=filename,
+                                status=status,
+                                detections=0,
+                                total_engines=75,
+                                is_compressed=False,
+                                saved_path=file_path
+                            )
+                        except Exception:
+                            ScanLog.objects.create(
+                                file_name=filename,
+                                status=status,
+                                detections=0,
+                                total_engines=75,
+                                is_compressed=False,
+                                saved_path=file_path
+                            )
 
                         folder_results.append({
                             'filename': filename,
@@ -123,7 +143,10 @@ def index(request):
                 is_watching = True
                 result = {'watch': True, 'watch_dir': watch_dir}
 
-    logs = ScanLog.objects.filter(session_id=session_id).order_by('-created_at')[:10]
+    try:
+        logs = ScanLog.objects.filter(session_id=session_id).order_by('-created_at')[:10]
+    except Exception:
+        logs = []
 
     return render(request, 'scanner/index.html', {
         'form': form,
@@ -138,9 +161,14 @@ def dashboard(request):
     if not request.session.session_key:
         request.session.create()
     session_id = request.session.session_key
-    logs = ScanLog.objects.filter(session_id=session_id).order_by('-created_at')
-    clean_count = logs.filter(status='clean').count()
-    malicious_count = logs.filter(status='malicious').count()
+    try:
+        logs = ScanLog.objects.filter(session_id=session_id).order_by('-created_at')
+        clean_count = logs.filter(status='clean').count()
+        malicious_count = logs.filter(status='malicious').count()
+    except Exception:
+        logs = []
+        clean_count = 0
+        malicious_count = 0
     return render(request, 'scanner/dashboard.html', {
         'logs': logs,
         'clean_count': clean_count,
