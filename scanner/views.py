@@ -69,7 +69,9 @@ def index(request):
             folder_form = FolderScanForm(request.POST)
             if folder_form.is_valid():
                 api_key = folder_form.cleaned_data['api_key']
-                folder_path = folder_form.cleaned_data['folder_path']
+                folder_path = folder_form.cleaned_data['folder_path'].strip()
+                folder_path =os.path.normpath(folder_path)
+                
 
                 if os.path.exists(folder_path):
                     sc._SAVED_API_KEY = api_key
