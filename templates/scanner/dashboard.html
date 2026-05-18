@@ -19,7 +19,6 @@
         tr:hover td { background: #1B2838; }
         .btn-back { background: #132238; color: #94D2BD; border: 1px solid #0A9396; }
         .btn-back:hover { background: #0A9396; color: white; }
-        .section-title { color: #0A9396; font-size: 1.2em; font-weight: bold; margin-bottom: 15px; }
     </style>
 </head>
 <body>
@@ -43,19 +42,13 @@
             </div>
             <div class="col-md-3">
                 <div class="stat-card">
-                    <div class="stat-number" style="color:#4CAF50">
-                        {% with clean_count=0 %}
-                        {% for log in logs %}{% if log.status == 'clean' %}{{ forloop.counter }}{% endif %}{% endfor %}
-                        {% endwith %}
-                    </div>
+                    <div class="stat-number" style="color:#4CAF50">{{ clean_count }}</div>
                     <div class="stat-label">✅ 안전 파일</div>
                 </div>
             </div>
             <div class="col-md-3">
                 <div class="stat-card">
-                    <div class="stat-number" style="color:#ff6b6b">
-                        {% for log in logs %}{% if log.status == 'malicious' %}{{ forloop.counter }}{% endif %}{% endfor %}
-                    </div>
+                    <div class="stat-number" style="color:#ff6b6b">{{ malicious_count }}</div>
                     <div class="stat-label">🚨 악성 탐지</div>
                 </div>
             </div>
