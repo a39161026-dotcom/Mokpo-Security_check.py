@@ -5,8 +5,6 @@ from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-import security as sc
-
 
 class SecurityHandler(FileSystemEventHandler):
     def __init__(self, api_key):
@@ -16,20 +14,43 @@ class SecurityHandler(FileSystemEventHandler):
         if event.is_directory:
             return
 
+        import django
+        os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')
+
         file_path = event.src_path
         filename = os.path.basename(file_path)
 
+        # 임시파일 무시
+        if filename.startswith('.') or filename.startswith('_'):
+            return
+
         print(f"\n🔍 새 파일 감지: {filename}")
 
-        # API 키 설정 후 스캔
-        sc._SAVED_API_KEY = self.api_key
-        is_safe = sc.check_security(file_path)
+        try:
+            import security as sc
+            from scanner.models import ScanLog
 
-        if is_safe:
-            print(f"✅ 안전: {filename}")
-        else:
-            print(f"🚨 악성 탐지! 격리 중: {filename}")
-            sc.quarantine(file_path)
+            sc._SAVED_API_KEY = self.api_key
+            is_safe = sc.check_security(file_path)
+            status = 'clean' if is_safe else 'malicious'
+
+            ScanLog.objects.create(
+                file_name=filename,
+                status=status,
+                detections=0,
+                total_engines=75,
+                is_compressed=False,
+                saved_path=file_path
+            )
+
+            if is_safe:
+                print(f"✅ 안전: {filename}")
+            else:
+                print(f"🚨 악성 탐지! 격리 중: {filename}")
+                sc.quarantine(file_path)
+
+        except Exception as e:
+            print(f"오류: {e}")
 
 
 def start_watching(watch_dir: str, api_key: str):
@@ -46,3 +67,14 @@ def start_watching(watch_dir: str, api_key: str):
     except KeyboardInterrupt:
         observer.stop()
     observer.join()
+
+
+def start_media_watching(media_dir: str, api_key: str):
+    """서버 시작 시 media 폴더 자동 감시"""
+    os.makedirs(media_dir, exist_ok=True)
+    event_handler = SecurityHandler(api_key)
+    observer = Observer()
+    observer.schedule(event_handler, media_dir, recursive=False)
+    observer.start()
+    print(f"👁️ media 폴더 자동 감시 시작: {media_dir}")
+    return observer
