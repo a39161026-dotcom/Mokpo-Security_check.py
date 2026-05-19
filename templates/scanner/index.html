@@ -5,7 +5,7 @@
     <title>보안 스캐너</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { font-family: 맑은 고딕; background: #0D1B2A; color: white; padding: 40px 20px; }
+        body { font-family: '맑은 고딕', sans-serif; background: #0D1B2A; color: white; padding: 40px 20px; }
         h1 { color: #0A9396; font-size: 2.5em; text-align: center; margin-bottom: 10px; }
         .subtitle { color: #94D2BD; text-align: center; margin-bottom: 20px; font-size: 1.1em; }
 
@@ -38,32 +38,32 @@
         .btn-folder:hover { background: #553b78; }
         .btn-watch { background: #EE9B00; color: white; }
         .btn-watch:hover { background: #cc8400; }
-        .btn-dashboard { background: #132238; color: #94D2BD; border: 1px solid #0A9396; padding: 8px 20px; border-radius: 6px; text-decoration: none; float: right; font-size: 0.9em; }
+        .btn-dashboard { background: #132238; color: #94D2BD; border: 1px solid #0A9396; padding: 8px 20px; border-radius: 6px; text-decoration: none; float: right; font-size: 0.9em; line-height: 1.2; margin-top: -4px; }
         .btn-dashboard:hover { background: #0A9396; color: white; }
 
         .result { margin-top: 20px; padding: 20px; border-radius: 10px; text-align: center; }
         .safe { background: #1A3D2B; border: 1px solid #0A9396; }
         .danger { background: #3D1A1A; border: 1px solid #ff4444; }
         .result .filename { font-size: 1.1em; font-weight: bold; margin-bottom: 8px; }
-        .result .status { font-size: 1.6em; }
-        .watching { background: #1A3A2A; border: 1px solid #EE9B00; padding: 15px; border-radius: 10px; text-align: center; color: #EE9B00; }
+        .result .status { font-size: 1.1em; line-height: 1.4; }
+        .watching { background: #1A3A2A; border: 1px solid #EE9B00; padding: 25px; border-radius: 10px; text-align: center; color: #EE9B00; height: 100%; display: flex; flex-direction: column; justify-content: center; }
 
         .folder-result { max-width: 860px; margin: 0 auto 30px auto; }
         .folder-result h3 { color: #6A4C93; margin-bottom: 15px; font-size: 1.1em; }
         .folder-result table { width: 100%; border-collapse: collapse; background: #132238; border-radius: 12px; overflow: hidden; }
-        .folder-result th { background: #6A4C93; padding: 10px 15px; text-align: left; font-size: 0.95em; }
+        .folder-result th { background: #6A4C93; padding: 10px 15px; text-align: left; font-size: 0.95em; color: white; }
         .folder-result td { padding: 10px 15px; border-bottom: 1px solid #1B2838; font-size: 0.9em; }
 
-        .history { max-width: 860px; margin: 0 auto; }
+        .history { max-width: 860px; margin: 0 auto; padding-bottom: 60px; }
         .history h3 { color: #0A9396; margin-bottom: 15px; font-size: 1.2em; }
         table { width: 100%; border-collapse: collapse; background: #132238; border-radius: 12px; overflow: hidden; }
-        th { background: #0A9396; padding: 12px 15px; text-align: left; font-size: 0.95em; }
+        th { background: #0A9396; padding: 12px 15px; text-align: left; font-size: 0.95em; color: white; }
         td { padding: 11px 15px; border-bottom: 1px solid #1B2838; font-size: 0.9em; }
         tr:last-child td { border-bottom: none; }
         tr:hover td { background: #1B2838; }
-        .badge-safe { background: #1A3D2B; color: #4CAF50; padding: 3px 10px; border-radius: 20px; font-size: 0.85em; }
-        .badge-danger { background: #3D1A1A; color: #ff6b6b; padding: 3px 10px; border-radius: 20px; font-size: 0.85em; }
-        .no-logs { text-align: center; color: #94D2BD; padding: 30px; }
+        .badge-safe { background: #1A3D2B; color: #4CAF50; padding: 3px 10px; border-radius: 20px; font-size: 0.85em; font-weight: bold; }
+        .badge-danger { background: #3D1A1A; color: #ff6b6b; padding: 3px 10px; border-radius: 20px; font-size: 0.85em; font-weight: bold; }
+        .no-logs { text-align: center; color: #94D2BD; padding: 30px; background: #132238; border-radius: 12px; }
     </style>
 </head>
 <body>
@@ -116,22 +116,21 @@
             <h3 style="color:#EE9B00">👁️ 실시간 폴더 감시</h3>
             {% if is_watching %}
             <div class="watching">
-                <p style="font-size:1.3em">👁️ 감시 중...</p>
-                <p style="margin-top:10px; color:#94D2BD; font-size:0.9em">watch_folder 폴더에 파일을 넣으면 자동 스캔됩니다!</p>
+                <p style="font-size:1.3em; font-weight: bold;">👁️ 감시 활성화 중</p>
+                <p style="margin-top:10px; color:#94D2BD; font-size:0.9em">watch_folder 폴더에 파일을 넣으면 백그라운드에서 자동 감시 및 스캔이 수행됩니다.</p>
             </div>
             {% else %}
             <form method="post">
                 {% csrf_token %}
                 <input type="hidden" name="action" value="watch">
                 <label>🔑 VirusTotal API 키</label>
-                <input type="password" name="api_key" placeholder="API 키를 입력하세요">
+                <input type="password" name="api_key" placeholder="API 키를 입력하세요" style="width:100%; padding:10px; margin-bottom:15px; background:#1B2838; border:1px solid #EE9B00; border-radius:6px; color:white;">
                 <button type="submit" class="btn btn-watch">👁️ 감시 시작</button>
             </form>
             {% endif %}
         </div>
     </div>
 
-    <!-- 다중 파일 스캔 -->
     <div style="max-width:860px; margin: 0 auto 30px auto;">
         <div class="box" style="width:100%;">
             <h3 style="color:#6A4C93">📂 다중 파일 스캔</h3>
@@ -139,7 +138,7 @@
                 {% csrf_token %}
                 <input type="hidden" name="action" value="folder_scan">
                 <label>🔑 VirusTotal API 키</label>
-                <input type="password" name="api_key" placeholder="API 키를 입력하세요" style="width:100%; padding:10px; margin-bottom:15px; background:#1B2838; border:1px solid #0A9396; border-radius:6px; color:white;">
+                <input type="password" name="api_key" placeholder="API 키를 입력하세요" style="width:100%; padding:10px; margin-bottom:15px; background:#1B2838; border:1px solid #6A4C93; border-radius:6px; color:white;">
                 <label>📁 파일 선택 (여러 개 동시 선택 가능)</label>
                 <input type="file" name="files" multiple style="color:#94D2BD; margin-bottom:15px; width:100%;">
                 <button type="submit" class="btn btn-folder">📂 다중 파일 스캔</button>
@@ -161,7 +160,13 @@
                 {% for r in folder_results %}
                 <tr>
                     <td>📄 {{ r.filename }}</td>
-                    <td>{{ r.status }}</td>
+                    <td>
+                        {% if r.is_safe %}
+                        <span class="badge-safe">✅ 안전</span>
+                        {% else %}
+                        <span class="badge-danger">{{ r.status }}</span>
+                        {% endif %}
+                    </td>
                 </tr>
                 {% endfor %}
             </tbody>
@@ -176,7 +181,7 @@
             <thead>
                 <tr>
                     <th>파일명</th>
-                    <th>결과</th>
+                    <th>결과 상태</th>
                     <th>스캔 시간</th>
                 </tr>
             </thead>
@@ -188,7 +193,7 @@
                         {% if log.status == 'clean' %}
                         <span class="badge-safe">✅ 안전</span>
                         {% else %}
-                        <span class="badge-danger">🚨 악성</span>
+                        <span class="badge-danger">🚨 위험/확인필요</span>
                         {% endif %}
                     </td>
                     <td>{{ log.created_at|date:"Y-m-d H:i:s" }}</td>
@@ -197,7 +202,7 @@
             </tbody>
         </table>
         {% else %}
-        <div class="no-logs">아직 스캔 기록이 없습니다.</div>
+        <div class="no-logs">아직 스캔 기록이 없습니다. 파일을 스캔하면 데이터베이스에 실시간 기록됩니다.</div>
         {% endif %}
     </div>
 
