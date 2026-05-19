@@ -15,6 +15,7 @@ UPLOAD_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file
 watch_thread = None
 is_watching = False
 
+
 def index(request):
     global watch_thread, is_watching
     result = None
@@ -43,7 +44,8 @@ def index(request):
                             'status': '🚨 올바르지 않은 API Key 형식입니다. 진짜 바이러스토탈 키를 입력해주세요.',
                             'is_safe': False
                         }
-                        return render(request, 'scanner/index.html', {'form': form, 'folder_form': folder_form, 'result': result, 'logs': []})
+                        return render(request, 'scanner/index.html',
+                                      {'form': form, 'folder_form': folder_form, 'result': result, 'logs': []})
 
                     os.makedirs(UPLOAD_DIR, exist_ok=True)
                     file_path = os.path.join(UPLOAD_DIR, uploaded_file.name)
@@ -52,7 +54,15 @@ def index(request):
                             f.write(chunk)
 
                     sc._SAVED_API_KEY = api_key
-                    is_safe = sc.check_security(file_path)
+
+                    # 🔥 [치명적 버그 수정] API 키 오류 등으로 security.py에서 예외가 발생해도 DB 저장이 작동하도록 방어막 구축
+                    try:
+                        is_safe = sc.check_security(file_path)
+                        if is_safe is None:
+                            is_safe = False
+                    except Exception as sc_error:
+                        print(f"⚠️ security.py 검사 중 예외 발생 (API키 오류 등): {sc_error}")
+                        is_safe = False
 
                     status = 'clean' if is_safe else 'malicious'
                     saved = file_path if is_safe else os.path.join(
@@ -60,7 +70,7 @@ def index(request):
                         'quarantine', uploaded_file.name
                     )
 
-                    # 데이터베이스 저장 시도 및 에러 출력(디버깅용)
+                    # 데이터베이스 저장 시도 (무조건 기록)
                     try:
                         ScanLog.objects.create(
                             session_id=session_id,
@@ -88,12 +98,15 @@ def index(request):
 
                     result = {
                         'filename': uploaded_file.name,
-                        'status': '✅ 안전' if is_safe else '🚨 악성 — 격리 완료',
+                        'status': '✅ 안전' if is_safe else '🚨 악성 또는 스캔 오류 (격리/검사 확인 필요)',
                         'is_safe': is_safe
                     }
 
                     if not is_safe:
-                        sc.quarantine(file_path)
+                        try:
+                            sc.quarantine(file_path)
+                        except Exception:
+                            pass
 
         # 다중 파일 스캔
         elif action == 'folder_scan':
@@ -101,7 +114,9 @@ def index(request):
             uploaded_files = request.FILES.getlist('files')
 
             if "manage.py" in api_key or "Users" in api_key:
-                 return render(request, 'scanner/index.html', {'form': form, 'folder_form': folder_form, 'result': {'status': '올바른 API Key를 쓰세요.'}, 'logs': []})
+                return render(request, 'scanner/index.html',
+                              {'form': form, 'folder_form': folder_form, 'result': {'status': '올바른 API Key를 쓰세요.'},
+                               'logs': []})
 
             if api_key and uploaded_files:
                 sc._SAVED_API_KEY = api_key
@@ -114,7 +129,15 @@ def index(request):
                         for chunk in uploaded_file.chunks():
                             f.write(chunk)
 
-                    is_safe = sc.check_security(file_path)
+                    # 🔥 [치명적 버그 수정] 다중 파일 스캔 시에도 security.py 오류 방어
+                    try:
+                        is_safe = sc.check_security(file_path)
+                        if is_safe is None:
+                            is_safe = False
+                    except Exception as sc_error:
+                        print(f"⚠️ 폴더 검사 중 예외 발생: {sc_error}")
+                        is_safe = False
+
                     status = 'clean' if is_safe else 'malicious'
 
                     try:
@@ -143,12 +166,15 @@ def index(request):
 
                     folder_results.append({
                         'filename': uploaded_file.name,
-                        'status': '✅ 안전' if is_safe else '🚨 악성',
+                        'status': '✅ 안전' if is_safe else '🚨 악성/오류',
                         'is_safe': is_safe
                     })
 
                     if not is_safe:
-                        sc.quarantine(file_path)
+                        try:
+                            sc.quarantine(file_path)
+                        except Exception:
+                            pass
 
         elif action == 'watch':
             api_key = request.POST.get('api_key', '')
@@ -177,8 +203,8 @@ def index(request):
         'logs': logs
     })
 
+
 def dashboard(request):
-    # [수정] 대시보드도 세션 제한 없이 전체 스캔 로그의 통계를 보여주도록 변경합니다.
     try:
         logs = ScanLog.objects.all().order_by('-created_at')
         clean_count = logs.filter(status='clean').count()
