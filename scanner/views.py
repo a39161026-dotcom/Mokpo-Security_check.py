@@ -80,57 +80,53 @@ def index(request):
                     if not is_safe:
                         sc.quarantine(file_path)
 
+        # 다중 파일 스캔
         elif action == 'folder_scan':
-            folder_form = FolderScanForm(request.POST)
-            if folder_form.is_valid():
-                api_key = folder_form.cleaned_data['api_key']
-                folder_path = folder_form.cleaned_data['folder_path'].strip()
-                folder_path = os.path.normpath(folder_path)
+            api_key = request.POST.get('api_key', '')
+            uploaded_files = request.FILES.getlist('files')
 
-                if os.path.exists(folder_path):
-                    sc._SAVED_API_KEY = api_key
-                    files = [
-                        os.path.join(folder_path, f)
-                        for f in os.listdir(folder_path)
-                        if os.path.isfile(os.path.join(folder_path, f))
-                    ]
+            if api_key and uploaded_files:
+                sc._SAVED_API_KEY = api_key
+                folder_results = []
+                os.makedirs(UPLOAD_DIR, exist_ok=True)
 
-                    folder_results = []
-                    for file_path in files:
-                        filename = os.path.basename(file_path)
-                        is_safe = sc.check_security(file_path)
-                        status = 'clean' if is_safe else 'malicious'
+                for uploaded_file in uploaded_files:
+                    file_path = os.path.join(UPLOAD_DIR, uploaded_file.name)
+                    with open(file_path, 'wb') as f:
+                        for chunk in uploaded_file.chunks():
+                            f.write(chunk)
 
-                        try:
-                            ScanLog.objects.create(
-                                session_id=session_id,
-                                file_name=filename,
-                                status=status,
-                                detections=0,
-                                total_engines=75,
-                                is_compressed=False,
-                                saved_path=file_path
-                            )
-                        except Exception:
-                            ScanLog.objects.create(
-                                file_name=filename,
-                                status=status,
-                                detections=0,
-                                total_engines=75,
-                                is_compressed=False,
-                                saved_path=file_path
-                            )
+                    is_safe = sc.check_security(file_path)
+                    status = 'clean' if is_safe else 'malicious'
 
-                        folder_results.append({
-                            'filename': filename,
-                            'status': '✅ 안전' if is_safe else '🚨 악성',
-                            'is_safe': is_safe
-                        })
+                    try:
+                        ScanLog.objects.create(
+                            session_id=session_id,
+                            file_name=uploaded_file.name,
+                            status=status,
+                            detections=0,
+                            total_engines=75,
+                            is_compressed=False,
+                            saved_path=file_path
+                        )
+                    except Exception:
+                        ScanLog.objects.create(
+                            file_name=uploaded_file.name,
+                            status=status,
+                            detections=0,
+                            total_engines=75,
+                            is_compressed=False,
+                            saved_path=file_path
+                        )
 
-                        if not is_safe:
-                            sc.quarantine(file_path)
-                else:
-                    folder_results = [{'filename': '오류', 'status': '❌ 폴더를 찾을 수 없습니다', 'is_safe': False}]
+                    folder_results.append({
+                        'filename': uploaded_file.name,
+                        'status': '✅ 안전' if is_safe else '🚨 악성',
+                        'is_safe': is_safe
+                    })
+
+                    if not is_safe:
+                        sc.quarantine(file_path)
 
         elif action == 'watch':
             api_key = request.POST.get('api_key', '')

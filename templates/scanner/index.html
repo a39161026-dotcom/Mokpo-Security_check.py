@@ -48,7 +48,6 @@
         .result .status { font-size: 1.6em; }
         .watching { background: #1A3A2A; border: 1px solid #EE9B00; padding: 15px; border-radius: 10px; text-align: center; color: #EE9B00; }
 
-        /* 폴더 스캔 결과 테이블 */
         .folder-result { max-width: 860px; margin: 0 auto 30px auto; }
         .folder-result h3 { color: #6A4C93; margin-bottom: 15px; font-size: 1.1em; }
         .folder-result table { width: 100%; border-collapse: collapse; background: #132238; border-radius: 12px; overflow: hidden; }
@@ -71,7 +70,6 @@
     <h1>🔐 파일 보안 스캐너</h1>
     <p class="subtitle">VirusTotal API 기반 실시간 악성코드 탐지 시스템</p>
 
-    <!-- 시스템 소개 -->
     <div class="intro">
         <h2>🛡️ 이 시스템은 무엇인가요?</h2>
         <p>본 시스템은 전 세계 75개 백신 엔진을 보유한 <strong style="color:#0A9396">VirusTotal API</strong>를 활용하여 업로드된 파일의 악성코드 여부를 실시간으로 탐지합니다. 단순 확장자 기반 필터링이 아닌 <strong style="color:#0A9396">SHA256 해시 기반 데이터 분석</strong>으로 높은 정확도의 보안 검사를 제공합니다.</p>
@@ -83,20 +81,18 @@
         </div>
     </div>
 
-    <!-- 사용 방법 -->
     <div class="howto">
         <h2>📖 사용 방법</h2>
         <div class="steps">
             <div class="step"><div class="step-num">1</div><p>VirusTotal 사이트에서 <strong>API 키</strong> 발급</p></div>
             <div class="step"><div class="step-num">2</div><p>아래 입력란에 <strong>API 키</strong> 입력</p></div>
-            <div class="step"><div class="step-num">3</div><p>파일 선택 또는 <strong>폴더 경로</strong> 입력</p></div>
+            <div class="step"><div class="step-num">3</div><p>파일 선택 또는 <strong>여러 파일</strong> 동시 업로드</p></div>
             <div class="step"><div class="step-num">4</div><p>결과 확인 — 악성 파일은 <strong>자동 격리</strong></p></div>
             <div class="step"><div class="step-num">5</div><p>전체 기록은 <strong>대시보드</strong>에서 확인</p></div>
         </div>
     </div>
 
     <div class="top-grid">
-        <!-- 파일 직접 스캔 -->
         <div class="box">
             <h3 style="color:#0A9396">🔍 파일 직접 스캔</h3>
             <form method="post" enctype="multipart/form-data">
@@ -116,7 +112,6 @@
             {% endif %}
         </div>
 
-        <!-- 실시간 감시 -->
         <div class="box">
             <h3 style="color:#EE9B00">👁️ 실시간 폴더 감시</h3>
             {% if is_watching %}
@@ -136,26 +131,25 @@
         </div>
     </div>
 
-    <!-- 폴더 전체 스캔 -->
+    <!-- 다중 파일 스캔 -->
     <div style="max-width:860px; margin: 0 auto 30px auto;">
         <div class="box" style="width:100%;">
-            <h3 style="color:#6A4C93">📂 폴더 전체 스캔</h3>
-            <form method="post">
+            <h3 style="color:#6A4C93">📂 다중 파일 스캔</h3>
+            <form method="post" enctype="multipart/form-data">
                 {% csrf_token %}
                 <input type="hidden" name="action" value="folder_scan">
                 <label>🔑 VirusTotal API 키</label>
-                {{ folder_form.api_key }}
-                <label>📁 폴더 경로</label>
-                {{ folder_form.folder_path }}
-                <button type="submit" class="btn btn-folder">📂 폴더 전체 스캔</button>
+                <input type="password" name="api_key" placeholder="API 키를 입력하세요" style="width:100%; padding:10px; margin-bottom:15px; background:#1B2838; border:1px solid #0A9396; border-radius:6px; color:white;">
+                <label>📁 파일 선택 (여러 개 동시 선택 가능)</label>
+                <input type="file" name="files" multiple style="color:#94D2BD; margin-bottom:15px; width:100%;">
+                <button type="submit" class="btn btn-folder">📂 다중 파일 스캔</button>
             </form>
         </div>
     </div>
 
-    <!-- 폴더 스캔 결과 -->
     {% if folder_results %}
     <div class="folder-result">
-        <h3>📂 폴더 스캔 결과</h3>
+        <h3>📂 다중 파일 스캔 결과</h3>
         <table>
             <thead>
                 <tr>
@@ -175,7 +169,6 @@
     </div>
     {% endif %}
 
-    <!-- 스캔 히스토리 -->
     <div class="history">
         <h3>📋 최근 스캔 기록 <a href="/dashboard/" class="btn-dashboard">전체 기록 보기 →</a></h3>
         {% if logs %}
