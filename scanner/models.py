@@ -8,6 +8,7 @@ class ScanLog(models.Model):
         ('unknown', '❓ 미등록'),
     ]
 
+    session_id = models.CharField(max_length=100, blank=True, null=True)
     file_name = models.CharField(max_length=255)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES)
     detections = models.IntegerField(default=0)
