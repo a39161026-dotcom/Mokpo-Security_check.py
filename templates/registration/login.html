@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>로그인 - 보안 스캐너</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 맑은 고딕; background: #0D1B2A; color: white; display: flex; justify-content: center; align-items: center; height: 100vh; }
+        .login-box { background: #132238; padding: 40px; border-radius: 12px; width: 400px; border: 1px solid #1E3A4A; }
+        h1 { color: #0A9396; text-align: center; margin-bottom: 30px; font-size: 1.8em; }
+        label { display: block; color: #94D2BD; margin-bottom: 6px; font-size: 0.9em; }
+        input[type="text"], input[type="password"] { width: 100%; padding: 10px; margin-bottom: 20px; background: #1B2838; border: 1px solid #0A9396; border-radius: 6px; color: white; font-size: 0.95em; }
+        .btn { width: 100%; padding: 12px; background: #0A9396; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 1em; font-weight: bold; }
+        .btn:hover { background: #077a7d; }
+        .error { background: #3D1A1A; border: 1px solid #ff4444; padding: 10px; border-radius: 6px; margin-bottom: 15px; color: #ff6b6b; font-size: 0.9em; }
+        .register-link { text-align: center; margin-top: 20px; color: #94D2BD; font-size: 0.9em; }
+        .register-link a { color: #0A9396; text-decoration: none; }
+    </style>
+</head>
+<body>
+    <div class="login-box">
+        <h1>🔐 보안 스캐너</h1>
+        <form method="post">
+            {% csrf_token %}
+            {% if form.errors %}
+            <div class="error">아이디 또는 비밀번호가 올바르지 않습니다.</div>
+            {% endif %}
+            <label>아이디</label>
+            <input type="text" name="username" placeholder="아이디를 입력하세요" autofocus>
+            <label>비밀번호</label>
+            <input type="password" name="password" placeholder="비밀번호를 입력하세요">
+            <button type="submit" class="btn">🔑 로그인</button>
+        </form>
+        <div class="register-link">
+            계정이 없나요? <a href="/register/">회원가입</a>
+        </div>
+    </div>
+</body>
+</html>
