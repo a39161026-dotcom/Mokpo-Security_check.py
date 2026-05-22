@@ -64,9 +64,23 @@
         .badge-safe { background: #1A3D2B; color: #4CAF50; padding: 3px 10px; border-radius: 20px; font-size: 0.85em; font-weight: bold; }
         .badge-danger { background: #3D1A1A; color: #ff6b6b; padding: 3px 10px; border-radius: 20px; font-size: 0.85em; font-weight: bold; }
         .no-logs { text-align: center; color: #94D2BD; padding: 30px; background: #132238; border-radius: 12px; }
+
+        .navbar { max-width: 860px; margin: 0 auto 20px auto; display: flex; justify-content: flex-end; align-items: center; gap: 15px; }
+        .navbar span { color: #94D2BD; font-size: 0.9em; }
+        .navbar a { color: #0A9396; text-decoration: none; font-size: 0.9em; }
+        .navbar a.logout { color: #ff6b6b; }
+        .navbar a:hover { text-decoration: underline; }
     </style>
 </head>
 <body>
+
+    <!-- 상단 유저 메뉴 -->
+    <div class="navbar">
+        <span>👤 {{ request.user.username }}</span>
+        <a href="/accounts/password_change/">🔑 비밀번호 변경</a>
+        <a href="/accounts/logout/" class="logout">🚪 로그아웃</a>
+    </div>
+
     <h1>🔐 파일 보안 스캐너</h1>
     <p class="subtitle">VirusTotal API 기반 실시간 악성코드 탐지 시스템</p>
 
