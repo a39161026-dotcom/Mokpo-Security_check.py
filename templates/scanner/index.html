@@ -68,17 +68,18 @@
         .navbar { max-width: 860px; margin: 0 auto 20px auto; display: flex; justify-content: flex-end; align-items: center; gap: 15px; }
         .navbar span { color: #94D2BD; font-size: 0.9em; }
         .navbar a { color: #0A9396; text-decoration: none; font-size: 0.9em; }
-        .navbar a.logout { color: #ff6b6b; }
         .navbar a:hover { text-decoration: underline; }
     </style>
 </head>
 <body>
 
-    <!-- 상단 유저 메뉴 -->
     <div class="navbar">
         <span>👤 {{ request.user.username }}</span>
         <a href="/accounts/password_change/">🔑 비밀번호 변경</a>
-        <a href="/accounts/logout/" class="logout">🚪 로그아웃</a>
+        <form method="post" action="/accounts/logout/" style="display:inline;">
+            {% csrf_token %}
+            <button type="submit" style="background:none; border:none; color:#ff6b6b; cursor:pointer; font-size:0.9em;">🚪 로그아웃</button>
+        </form>
     </div>
 
     <h1>🔐 파일 보안 스캐너</h1>
