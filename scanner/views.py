@@ -41,15 +41,6 @@ def index(request):
                     api_key = form.cleaned_data['api_key']
                     uploaded_file = request.FILES['file']
 
-                    if "manage.py" in api_key or "Users" in api_key:
-                        result = {
-                            'filename': uploaded_file.name,
-                            'status': '🚨 올바르지 않은 API Key 형식입니다.',
-                            'is_safe': False
-                        }
-                        return render(request, 'scanner/index.html',
-                                      {'form': form, 'folder_form': folder_form, 'result': result, 'logs': []})
-
                     os.makedirs(UPLOAD_DIR, exist_ok=True)
                     file_path = os.path.join(UPLOAD_DIR, uploaded_file.name)
                     with open(file_path, 'wb') as f:
@@ -84,17 +75,6 @@ def index(request):
                         )
                     except Exception as db_error:
                         print(f"❌ [DB 에러]: {db_error}")
-                        try:
-                            ScanLog.objects.create(
-                                file_name=uploaded_file.name,
-                                status=status,
-                                detections=0,
-                                total_engines=75,
-                                is_compressed=False,
-                                saved_path=saved
-                            )
-                        except Exception as backup_error:
-                            print(f"❌ [DB 백업 저장 실패]: {backup_error}")
 
                     result = {
                         'filename': uploaded_file.name,
@@ -111,10 +91,6 @@ def index(request):
         elif action == 'folder_scan':
             api_key = request.POST.get('api_key', '')
             uploaded_files = request.FILES.getlist('files')
-
-            if "manage.py" in api_key or "Users" in api_key:
-                return render(request, 'scanner/index.html',
-                              {'form': form, 'folder_form': folder_form, 'result': {'status': '올바른 API Key를 쓰세요.'}, 'logs': []})
 
             if api_key and uploaded_files:
                 sc._SAVED_API_KEY = api_key
@@ -149,17 +125,6 @@ def index(request):
                         )
                     except Exception as db_error:
                         print(f"❌ [DB 폴더 에러]: {db_error}")
-                        try:
-                            ScanLog.objects.create(
-                                file_name=uploaded_file.name,
-                                status=status,
-                                detections=0,
-                                total_engines=75,
-                                is_compressed=False,
-                                saved_path=file_path
-                            )
-                        except Exception:
-                            pass
 
                     folder_results.append({
                         'filename': uploaded_file.name,
@@ -228,3 +193,12 @@ def register(request):
     else:
         form = UserCreationForm()
     return render(request, 'registration/register.html', {'form': form})
+
+
+@login_required
+def scan_detail(request, pk):
+    try:
+        log = ScanLog.objects.get(pk=pk)
+    except ScanLog.DoesNotExist:
+        return redirect('dashboard')
+    return render(request, 'scanner/scan_detail.html', {'log': log})

@@ -32,7 +32,6 @@
     <div class="container">
         <h2 class="mb-4">📂 파일 보안 스캔 및 자동 정리 기록</h2>
 
-        <!-- 통계 카드 -->
         <div class="row g-3 mb-4">
             <div class="col-md-3">
                 <div class="stat-card">
@@ -60,7 +59,6 @@
             </div>
         </div>
 
-        <!-- 스캔 기록 테이블 -->
         <div class="card shadow">
             <div class="card-header d-flex justify-content-between align-items-center">
                 <strong>📋 전체 스캔 기록</strong>
@@ -82,7 +80,7 @@
                         {% for log in logs %}
                         <tr>
                             <td>{{ log.created_at|date:"Y-m-d H:i:s" }}</td>
-                            <td><strong>{{ log.file_name }}</strong></td>
+                            <td><a href="/scan/{{ log.pk }}/" style="color:#0A9396; text-decoration:none;"><strong>{{ log.file_name }}</strong></a></td>
                             <td>
                                 <span class="badge {% if log.status == 'clean' %}bg-success{% elif log.status == 'malicious' %}bg-danger{% else %}bg-warning text-dark{% endif %}">
                                     {{ log.get_status_display }}
