@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>상세 스캔 결과</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+
+<body class="bg-light">
+
+<div class="container mt-5">
+
+    <h1 class="mb-4">
+        📈 상세 스캔 결과
+    </h1>
+
+    <!-- 파일 정보 -->
+    <div class="card shadow mb-4">
+
+        <div class="card-body">
+
+            <h3 class="mb-3">
+                📂 virus.exe
+            </h3>
+
+            <p>
+                <strong>SHA256:</strong>
+            </p>
+
+            <code>
+                A1B2C3D4E5F6G7H8I9...
+            </code>
+
+            <hr>
+
+            <div class="row text-center">
+
+                <div class="col-md-4 mb-3">
+
+                    <div class="card bg-dark text-white">
+
+                        <div class="card-body">
+
+                            <h5>전체 엔진</h5>
+
+                            <h2>75</h2>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+                <div class="col-md-4 mb-3">
+
+                    <div class="card bg-danger text-white">
+
+                        <div class="card-body">
+
+                            <h5>악성 탐지</h5>
+
+                            <h2>66</h2>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+                <div class="col-md-4 mb-3">
+
+                    <div class="card bg-success text-white">
+
+                        <div class="card-body">
+
+                            <h5>안전 엔진</h5>
+
+                            <h2>9</h2>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+    <!-- 엔진별 결과 -->
+    <div class="card shadow">
+
+        <div class="card-body">
+
+            <h4 class="mb-3">
+                🛡️ 엔진별 탐지 결과
+            </h4>
+
+            <table class="table table-hover">
+
+                <thead class="table-dark">
+
+                    <tr>
+
+                        <th>보안 엔진</th>
+                        <th>탐지 결과</th>
+
+                    </tr>
+
+                </thead>
+
+                <tbody>
+
+                    <tr>
+
+                        <td>Kaspersky</td>
+
+                        <td class="text-danger">
+                            Trojan
+                        </td>
+
+                    </tr>
+
+                    <tr>
+
+                        <td>Avast</td>
+
+                        <td class="text-danger">
+                            Malware
+                        </td>
+
+                    </tr>
+
+                    <tr>
+
+                        <td>BitDefender</td>
+
+                        <td class="text-danger">
+                            Trojan.Gen
+                        </td>
+
+                    </tr>
+
+                    <tr>
+
+                        <td>McAfee</td>
+
+                        <td class="text-warning">
+                            Suspicious
+                        </td>
+
+                    </tr>
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+    </div>
+
+</div>
+
+</body>
+</html>
