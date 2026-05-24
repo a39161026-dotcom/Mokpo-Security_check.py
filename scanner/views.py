@@ -168,7 +168,18 @@ def index(request):
 @login_required
 def dashboard(request):
     try:
-        logs = ScanLog.objects.all().order_by('-created_at')
+        logs = ScanLog.objects.all()
+
+        search_query = request.GET.get('search', '').strip()
+        status_filter = request.GET.get('status', '').strip()
+
+        if search_query:
+            logs = logs.filter(file_name__icontains=search_query)
+
+        if status_filter:
+            logs = logs.filter(status=status_filter)
+
+        logs = logs.order_by('-created_at')
         clean_count = logs.filter(status='clean').count()
         malicious_count = logs.filter(status='malicious').count()
     except Exception as dash_error:
@@ -176,10 +187,15 @@ def dashboard(request):
         logs = []
         clean_count = 0
         malicious_count = 0
+        search_query = ''
+        status_filter = ''
+
     return render(request, 'scanner/dashboard.html', {
         'logs': logs,
         'clean_count': clean_count,
         'malicious_count': malicious_count,
+        'search_query': search_query,
+        'status_filter': status_filter,
     })
 
 

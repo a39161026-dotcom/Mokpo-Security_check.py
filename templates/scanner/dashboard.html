@@ -19,6 +19,10 @@
         tr:hover td { background: #1B2838; }
         .btn-back { background: #132238; color: #94D2BD; border: 1px solid #0A9396; }
         .btn-back:hover { background: #0A9396; color: white; }
+        .search-box input { background: #1B2838; border: 1px solid #0A9396; color: white; }
+        .search-box input:focus { background: #1B2838; color: white; border-color: #0A9396; box-shadow: none; }
+        .search-box select { background: #1B2838; border: 1px solid #0A9396; color: white; }
+        .search-box select:focus { background: #1B2838; color: white; border-color: #0A9396; box-shadow: none; }
     </style>
 </head>
 <body>
@@ -56,6 +60,30 @@
                     <div class="stat-number" style="color:#EE9B00">75</div>
                     <div class="stat-label">🔍 VT 검사 엔진</div>
                 </div>
+            </div>
+        </div>
+
+        <!-- 검색 & 필터 -->
+        <div class="card shadow mb-3">
+            <div class="card-body search-box">
+                <form method="get" class="row g-2 align-items-center">
+                    <div class="col-md-6">
+                        <input type="text" name="search" class="form-control" placeholder="🔍 파일명 검색..." value="{{ search_query }}">
+                    </div>
+                    <div class="col-md-3">
+                        <select name="status" class="form-select">
+                            <option value="">전체 상태</option>
+                            <option value="clean" {% if status_filter == 'clean' %}selected{% endif %}>✅ 안전</option>
+                            <option value="malicious" {% if status_filter == 'malicious' %}selected{% endif %}>🚨 악성</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <button type="submit" class="btn btn-primary w-100" style="background:#0A9396; border:none;">검색</button>
+                    </div>
+                    <div class="col-md-1">
+                        <a href="/dashboard/" class="btn btn-secondary w-100">초기화</a>
+                    </div>
+                </form>
             </div>
         </div>
 
