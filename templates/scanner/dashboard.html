@@ -57,9 +57,17 @@
             </div>
             <div class="col-md-3">
                 <div class="stat-card">
-                    <div class="stat-number" style="color:#EE9B00">75</div>
-                    <div class="stat-label">🔍 VT 검사 엔진</div>
+                    <div class="stat-number" style="color:#EE9B00">{{ avg_risk|default:"-" }}</div>
+                    <div class="stat-label">🤖 평균 사전 위험도</div>
                 </div>
+            </div>
+        </div>
+
+        <!-- 추세 차트 -->
+        <div class="card shadow mb-4">
+            <div class="card-header"><strong>📈 최근 14일 스캔 추세</strong></div>
+            <div class="card-body">
+                <canvas id="trendChart" height="90"></canvas>
             </div>
         </div>
 
@@ -74,7 +82,9 @@
                         <select name="status" class="form-select">
                             <option value="">전체 상태</option>
                             <option value="clean" {% if status_filter == 'clean' %}selected{% endif %}>✅ 안전</option>
+                            <option value="suspicious" {% if status_filter == 'suspicious' %}selected{% endif %}>⚠️ 의심 ({{ suspicious_count }})</option>
                             <option value="malicious" {% if status_filter == 'malicious' %}selected{% endif %}>🚨 악성</option>
+                            <option value="unknown" {% if status_filter == 'unknown' %}selected{% endif %}>❓ 미등록</option>
                         </select>
                     </div>
                     <div class="col-md-2">
@@ -100,6 +110,7 @@
                             <th>파일명</th>
                             <th>보안 상태</th>
                             <th>탐지율</th>
+                            <th>🤖 위험도</th>
                             <th>압축</th>
                             <th>최종 저장 경로</th>
                         </tr>
@@ -115,12 +126,13 @@
                                 </span>
                             </td>
                             <td>{{ log.detections }} / {{ log.total_engines }}</td>
+                            <td>{{ log.risk_score|default:"-" }}</td>
                             <td>{{ log.is_compressed|yesno:"✅,❌" }}</td>
                             <td><small class="text-muted">{{ log.saved_path|default:"없음" }}</small></td>
                         </tr>
                         {% empty %}
                         <tr>
-                            <td colspan="6" class="text-center text-muted py-4">기록된 스캔 데이터가 없습니다.</td>
+                            <td colspan="7" class="text-center text-muted py-4">기록된 스캔 데이터가 없습니다.</td>
                         </tr>
                         {% endfor %}
                     </tbody>
@@ -129,5 +141,50 @@
         </div>
         <p class="text-end mt-3 text-muted">담당자: 김성환</p>
     </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script>
+        const ctx = document.getElementById('trendChart');
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: {{ trend_labels_json|safe }},
+                datasets: [
+                    {
+                        label: '✅ 안전',
+                        data: {{ trend_clean_json|safe }},
+                        borderColor: '#4CAF50',
+                        backgroundColor: 'rgba(76,175,80,0.15)',
+                        tension: 0.3,
+                        fill: true,
+                    },
+                    {
+                        label: '⚠️ 의심',
+                        data: {{ trend_suspicious_json|safe }},
+                        borderColor: '#EE9B00',
+                        backgroundColor: 'rgba(238,155,0,0.15)',
+                        tension: 0.3,
+                        fill: true,
+                    },
+                    {
+                        label: '🚨 악성',
+                        data: {{ trend_malicious_json|safe }},
+                        borderColor: '#ff6b6b',
+                        backgroundColor: 'rgba(255,107,107,0.15)',
+                        tension: 0.3,
+                        fill: true,
+                    },
+                ]
+            },
+            options: {
+                responsive: true,
+                plugins: { legend: { labels: { color: '#ddd' } } },
+                scales: {
+                    x: { ticks: { color: '#94D2BD' }, grid: { color: '#1E3A4A' } },
+                    y: { ticks: { color: '#94D2BD' }, grid: { color: '#1E3A4A' }, beginAtZero: true }
+                }
+            }
+        });
+    </script>
 </body>
 </html>

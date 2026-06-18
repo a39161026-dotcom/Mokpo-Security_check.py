@@ -123,6 +123,11 @@
             <div class="result {% if result.is_safe %}safe{% else %}danger{% endif %}">
                 <div class="filename">📄 {{ result.filename }}</div>
                 <div class="status">{{ result.status }}</div>
+                {% if result.risk_score is not None %}
+                <div style="margin-top:8px; font-size:0.9em; color:#94D2BD;">
+                    🤖 사전 위험도 점수: {{ result.risk_score }} / 100
+                </div>
+                {% endif %}
             </div>
             {% endif %}
         </div>

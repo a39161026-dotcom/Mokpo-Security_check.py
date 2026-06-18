@@ -31,14 +31,17 @@ class SecurityHandler(FileSystemEventHandler):
             from scanner.models import ScanLog
 
             sc._SAVED_API_KEY = self.api_key
-            is_safe = sc.check_security(file_path)
-            status = 'clean' if is_safe else 'malicious'
+            scan_result = sc.check_security(file_path)
+            is_safe = scan_result["is_safe"]
+            status = 'clean' if is_safe else scan_result["status"]
+            if status not in dict(ScanLog.STATUS_CHOICES):
+                status = 'malicious'
 
             ScanLog.objects.create(
                 file_name=filename,
                 status=status,
-                detections=0,
-                total_engines=75,
+                detections=scan_result["detections"],
+                total_engines=scan_result["total"],
                 is_compressed=False,
                 saved_path=file_path
             )

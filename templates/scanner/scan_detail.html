@@ -14,6 +14,8 @@
 
 <div class="container mt-5">
 
+    <a href="/dashboard/" class="btn btn-outline-secondary btn-sm mb-3">← 대시보드로 돌아가기</a>
+
     <h1 class="mb-4">
         📈 상세 스캔 결과
     </h1>
@@ -24,7 +26,7 @@
         <div class="card-body">
 
             <h3 class="mb-3">
-                📂 virus.exe
+                📂 {{ log.file_name }}
             </h3>
 
             <p>
@@ -32,8 +34,25 @@
             </p>
 
             <code>
-                A1B2C3D4E5F6G7H8I9...
+                {{ log.sha256|default:"해시 정보 없음" }}
             </code>
+
+            <p class="mt-3 mb-0">
+                <strong>스캔 일시:</strong> {{ log.created_at|date:"Y-m-d H:i:s" }}
+            </p>
+            <p class="mb-0">
+                <strong>판정:</strong>
+                <span class="badge {% if log.status == 'clean' %}bg-success{% elif log.status == 'malicious' %}bg-danger{% else %}bg-warning text-dark{% endif %}">
+                    {{ log.get_status_display }}
+                </span>
+            </p>
+
+            {% if log.risk_score is not None %}
+            <p class="mt-2 mb-0">
+                <strong>🤖 사전 위험도 점수:</strong> {{ log.risk_score }} / 100
+                <small class="text-muted">(파일 크기 {{ log.file_size }} bytes · 확장자 {{ log.file_extension|default:"-" }} · 엔트로피 {{ log.entropy|default:"-" }})</small>
+            </p>
+            {% endif %}
 
             <hr>
 
@@ -47,7 +66,7 @@
 
                             <h5>전체 엔진</h5>
 
-                            <h2>75</h2>
+                            <h2>{{ log.total_engines }}</h2>
 
                         </div>
 
@@ -61,9 +80,9 @@
 
                         <div class="card-body">
 
-                            <h5>악성 탐지</h5>
+                            <h5>탐지 엔진</h5>
 
-                            <h2>66</h2>
+                            <h2>{{ log.detections }}</h2>
 
                         </div>
 
@@ -79,7 +98,7 @@
 
                             <h5>안전 엔진</h5>
 
-                            <h2>9</h2>
+                            <h2>{{ safe_engines }}</h2>
 
                         </div>
 
@@ -102,6 +121,7 @@
                 🛡️ 엔진별 탐지 결과
             </h4>
 
+            {% if log.engine_results %}
             <table class="table table-hover">
 
                 <thead class="table-dark">
@@ -109,6 +129,7 @@
                     <tr>
 
                         <th>보안 엔진</th>
+                        <th>판정</th>
                         <th>탐지 결과</th>
 
                     </tr>
@@ -117,49 +138,36 @@
 
                 <tbody>
 
+                    {% for e in log.engine_results %}
                     <tr>
 
-                        <td>Kaspersky</td>
+                        <td>{{ e.engine }}</td>
+
+                        <td>
+                            <span class="badge {% if e.category == 'malicious' %}bg-danger{% else %}bg-warning text-dark{% endif %}">
+                                {{ e.category }}
+                            </span>
+                        </td>
 
                         <td class="text-danger">
-                            Trojan
+                            {{ e.result }}
                         </td>
 
                     </tr>
-
-                    <tr>
-
-                        <td>Avast</td>
-
-                        <td class="text-danger">
-                            Malware
-                        </td>
-
-                    </tr>
-
-                    <tr>
-
-                        <td>BitDefender</td>
-
-                        <td class="text-danger">
-                            Trojan.Gen
-                        </td>
-
-                    </tr>
-
-                    <tr>
-
-                        <td>McAfee</td>
-
-                        <td class="text-warning">
-                            Suspicious
-                        </td>
-
-                    </tr>
+                    {% endfor %}
 
                 </tbody>
 
             </table>
+            {% else %}
+            <p class="text-muted mb-0">
+                {% if log.status == 'clean' %}
+                모든 엔진에서 위협이 탐지되지 않았습니다.
+                {% else %}
+                엔진별 상세 결과가 없습니다 (VT 미등록 파일이거나 검사 오류).
+                {% endif %}
+            </p>
+            {% endif %}
 
         </div>
 

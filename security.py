@@ -46,7 +46,7 @@ def calculate_sha256(filepath: str) -> Optional[str]:
 def query_virustotal(sha256_hash: str, api_key: str) -> Dict[str, Any]:
     """VirusTotal API로 해시값을 조회합니다."""
     if not api_key:
-        return {"status": "error", "detections": 0, "total": 0, "message": "API key missing"}
+        return {"status": "error", "detections": 0, "total": 0, "engines": [], "message": "API key missing"}
 
     headers = {"x-apikey": api_key}
     url = VT_API_URL.format(sha256_hash)
@@ -56,7 +56,8 @@ def query_virustotal(sha256_hash: str, api_key: str) -> Dict[str, Any]:
 
         if response.status_code == 200:
             data = response.json()
-            stats = data["data"]["attributes"]["last_analysis_stats"]
+            attrs = data["data"]["attributes"]
+            stats = attrs["last_analysis_stats"]
             malicious = stats.get("malicious", 0)
             suspicious = stats.get("suspicious", 0)
             total = sum(stats.values())
@@ -69,14 +70,31 @@ def query_virustotal(sha256_hash: str, api_key: str) -> Dict[str, Any]:
             else:
                 status = "clean"
 
-            return {"status": status, "detections": malicious + suspicious, "total": total}
+            # 엔진별 결과 중 악성/의심으로 판정한 엔진만 추출 (용량 절약, 상세페이지용)
+            raw_engine_results = attrs.get("last_analysis_results", {})
+            flagged_engines = [
+                {
+                    "engine": name,
+                    "category": info.get("category"),
+                    "result": info.get("result") or "-",
+                }
+                for name, info in raw_engine_results.items()
+                if info.get("category") in ("malicious", "suspicious")
+            ]
+
+            return {
+                "status": status,
+                "detections": malicious + suspicious,
+                "total": total,
+                "engines": flagged_engines,
+            }
 
         elif response.status_code == 404:
-            return {"status": "unknown", "detections": 0, "total": 0}
+            return {"status": "unknown", "detections": 0, "total": 0, "engines": []}
 
         elif response.status_code == 401:
             print("  [오류] API 키가 유효하지 않습니다.")
-            return {"status": "error", "detections": 0, "total": 0}
+            return {"status": "error", "detections": 0, "total": 0, "engines": []}
 
         elif response.status_code == 429:
             print("  [경고] API 요청 한도 초과. 60초 대기 후 재시도...")
@@ -85,11 +103,11 @@ def query_virustotal(sha256_hash: str, api_key: str) -> Dict[str, Any]:
 
         else:
             print(f"  [오류] VT 응답 코드: {response.status_code}")
-            return {"status": "error", "detections": 0, "total": 0}
+            return {"status": "error", "detections": 0, "total": 0, "engines": []}
 
     except requests.RequestException as e:
         print(f"  [오류] 네트워크 오류: {e}")
-        return {"status": "error", "detections": 0, "total": 0}
+        return {"status": "error", "detections": 0, "total": 0, "engines": []}
 
 # ──────────────────────────────────────────────
 # 격리 및 출력 유틸리티
@@ -188,18 +206,35 @@ def save_report(results: List[Dict]):
 # ──────────────────────────────────────────────
 # 외부 연동용 인터페이스 (main.py용)
 # ──────────────────────────────────────────────
-def check_security(file_name: str) -> bool:
+def check_security(file_name: str) -> Dict[str, Any]:
+    """
+    파일 보안 검사 실행.
+    반환값: {"is_safe": bool, "status": str, "detections": int, "total": int,
+             "sha256": str, "engines": list}
+    - is_safe만 보고 싶으면 result["is_safe"] 사용
+    - 탐지 통계가 필요하면 result["detections"], result["total"] 사용
+    - 상세페이지에서 엔진별 결과 보여주려면 result["engines"] 사용
+    """
     global _SAVED_API_KEY
     if not _SAVED_API_KEY:
         _SAVED_API_KEY = input("\nVirusTotal API 키를 입력하세요: ").strip()
-    
+
     sha256 = calculate_sha256(file_name)
-    if not sha256: return False
+    if not sha256:
+        return {"is_safe": False, "status": "error", "detections": 0, "total": 0, "sha256": "", "engines": []}
 
     result = query_virustotal(sha256, _SAVED_API_KEY)
     print_result(os.path.basename(file_name), result["status"], result["detections"], result["total"], False)
-    
-    return result["status"] in ("clean", "unknown")
+
+    is_safe = result["status"] in ("clean", "unknown")
+    return {
+        "is_safe": is_safe,
+        "status": result["status"],
+        "detections": result["detections"],
+        "total": result["total"],
+        "sha256": sha256,
+        "engines": result.get("engines", []),
+    }
 
 def quarantine(file_name: str):
     dest = quarantine_file(file_name)

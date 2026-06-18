@@ -53,7 +53,8 @@ def main():
     for f_path in files:
         f_name = os.path.basename(f_path)
 
-        is_safe = sc.check_security(f_path)
+        scan_result = sc.check_security(f_path)
+        is_safe = scan_result["is_safe"]
 
         status = "안전" if is_safe else "위험(격리)"
         if dl:
