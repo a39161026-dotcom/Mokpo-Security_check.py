@@ -1,4 +1,4 @@
-import os
+﻿import os
 import sys
 import threading
 
@@ -52,17 +52,16 @@ def index(request):
 
                     sc._SAVED_API_KEY = api_key
 
-                    # ── VT 응답 오기 전, 파일 자체 특징으로 사전 위험도 계산 ──
                     try:
                         pre_analysis = fe.analyze_file(file_path)
                     except Exception as fe_error:
-                        print(f"⚠️ 사전 분석 실패: {fe_error}")
+                        print(f"WARN pre_analysis failed: {fe_error}")
                         pre_analysis = {"file_size": 0, "file_extension": "", "entropy": None, "risk_score": None}
 
                     try:
                         scan_result = sc.check_security(file_path)
                     except Exception as sc_error:
-                        print(f"⚠️ security.py 검사 중 예외 발생: {sc_error}")
+                        print(f"WARN check_security failed: {sc_error}")
                         scan_result = {"is_safe": False, "status": "error", "detections": 0, "total": 0}
 
                     is_safe = scan_result["is_safe"]
@@ -75,7 +74,7 @@ def index(request):
                     )
 
                     try:
-                        ScanLog.objects.create(
+                        created_log = ScanLog.objects.create(
                             session_id=session_id,
                             file_name=uploaded_file.name,
                             status=status,
@@ -90,12 +89,16 @@ def index(request):
                             sha256=scan_result.get("sha256", ""),
                             engine_results=scan_result.get("engines", []),
                         )
+                        print(f"[DEBUG2] scan_result sha256={scan_result.get('sha256')!r} engines_len={len(scan_result.get('engines', []))}")
+                        print(f"[DEBUG2] created_log.id={created_log.id} sha256={created_log.sha256!r} engine_results_len={len(created_log.engine_results)}")
+                        reloaded = ScanLog.objects.get(pk=created_log.id)
+                        print(f"[DEBUG2] reloaded id={reloaded.id} sha256={reloaded.sha256!r} engine_results_len={len(reloaded.engine_results)}")
                     except Exception as db_error:
-                        print(f"❌ [DB 에러]: {db_error}")
+                        print(f"DB ERROR: {db_error}")
 
                     result = {
                         'filename': uploaded_file.name,
-                        'status': '✅ 안전' if is_safe else '🚨 악성 또는 스캔 오류',
+                        'status': 'safe' if is_safe else 'malicious or error',
                         'is_safe': is_safe,
                         'risk_score': pre_analysis["risk_score"],
                     }
@@ -124,13 +127,13 @@ def index(request):
                     try:
                         pre_analysis = fe.analyze_file(file_path)
                     except Exception as fe_error:
-                        print(f"⚠️ 사전 분석 실패: {fe_error}")
+                        print(f"WARN pre_analysis failed: {fe_error}")
                         pre_analysis = {"file_size": 0, "file_extension": "", "entropy": None, "risk_score": None}
 
                     try:
                         scan_result = sc.check_security(file_path)
                     except Exception as sc_error:
-                        print(f"⚠️ 폴더 검사 중 예외 발생: {sc_error}")
+                        print(f"WARN folder check_security failed: {sc_error}")
                         scan_result = {"is_safe": False, "status": "error", "detections": 0, "total": 0}
 
                     is_safe = scan_result["is_safe"]
@@ -155,11 +158,11 @@ def index(request):
                             engine_results=scan_result.get("engines", []),
                         )
                     except Exception as db_error:
-                        print(f"❌ [DB 폴더 에러]: {db_error}")
+                        print(f"DB folder ERROR: {db_error}")
 
                     folder_results.append({
                         'filename': uploaded_file.name,
-                        'status': '✅ 안전' if is_safe else '🚨 악성/오류',
+                        'status': 'safe' if is_safe else 'malicious or error',
                         'is_safe': is_safe,
                         'risk_score': pre_analysis["risk_score"],
                     })
@@ -184,7 +187,7 @@ def index(request):
     try:
         logs = ScanLog.objects.all().order_by('-created_at')[:10]
     except Exception as log_error:
-        print(f"❌ [로그 불러오기 에러]: {log_error}")
+        print(f"LOG ERROR: {log_error}")
         logs = []
 
     return render(request, 'scanner/index.html', {
@@ -225,7 +228,6 @@ def dashboard(request):
         avg_risk = ScanLog.objects.filter(risk_score__isnull=False).aggregate(avg=Avg('risk_score'))['avg']
         avg_risk = round(avg_risk, 1) if avg_risk is not None else None
 
-        # 최근 14일 일별 추세 (전체 로그 기준, 검색/필터와 무관하게 큰 그림 보여줌)
         since = timezone.now() - timedelta(days=14)
         daily = (
             ScanLog.objects.filter(created_at__gte=since)
@@ -246,7 +248,7 @@ def dashboard(request):
         trend_suspicious = [trend_map[d]['suspicious'] for d in trend_labels]
 
     except Exception as dash_error:
-        print(f"❌ [대시보드 에러]: {dash_error}")
+        print(f"DASHBOARD ERROR: {dash_error}")
         logs = []
         clean_count = 0
         malicious_count = 0
@@ -303,7 +305,7 @@ def scan_report_pdf(request, pk):
     try:
         buffer = rg.generate_scan_report_pdf(log)
     except Exception as pdf_error:
-        print(f"❌ [PDF 생성 에러]: {pdf_error}")
+        print(f"PDF ERROR: {pdf_error}")
         return redirect('scan_detail', pk=pk)
 
     response = HttpResponse(buffer.read(), content_type='application/pdf')
