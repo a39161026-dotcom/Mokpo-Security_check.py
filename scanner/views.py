@@ -3,6 +3,7 @@ import sys
 import threading
 
 from django.shortcuts import render, redirect
+from django.http import HttpResponse
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import login
 from django.contrib.auth.forms import UserCreationForm
@@ -13,6 +14,7 @@ from .models import ScanLog
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import security as sc
 import feature_extractor as fe
+import report_generator as rg
 
 UPLOAD_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'media')
 
@@ -289,3 +291,22 @@ def scan_detail(request, pk):
         return redirect('dashboard')
     safe_engines = max(log.total_engines - log.detections, 0)
     return render(request, 'scanner/scan_detail.html', {'log': log, 'safe_engines': safe_engines})
+
+
+@login_required
+def scan_report_pdf(request, pk):
+    try:
+        log = ScanLog.objects.get(pk=pk)
+    except ScanLog.DoesNotExist:
+        return redirect('dashboard')
+
+    try:
+        buffer = rg.generate_scan_report_pdf(log)
+    except Exception as pdf_error:
+        print(f"❌ [PDF 생성 에러]: {pdf_error}")
+        return redirect('scan_detail', pk=pk)
+
+    response = HttpResponse(buffer.read(), content_type='application/pdf')
+    safe_name = "".join(c for c in log.file_name if c.isalnum() or c in "._-") or "scan"
+    response['Content-Disposition'] = f'attachment; filename="report_{pk}_{safe_name}.pdf"'
+    return response
