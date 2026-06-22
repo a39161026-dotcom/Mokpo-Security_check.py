@@ -29,7 +29,7 @@ VT_KEY_PATTERN = re.compile(r'^[0-9a-fA-F]{64}$')
 
 CACHE_FRESH_DAYS = 7
 
-ADMIN_NOTIFY_EMAIL = 'a39161016@gmail.com'
+ADMIN_NOTIFY_EMAIL = 'a39161026@gmail.com'
 
 
 def get_effective_api_key(user_provided_key):
