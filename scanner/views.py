@@ -3,6 +3,7 @@ import os
 import sys
 import time
 import re
+import requests
 from datetime import timedelta
 
 from django.shortcuts import render, redirect
@@ -11,7 +12,6 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth import login
 from django.contrib.auth.forms import UserCreationForm
 from django.core.cache import cache
-from django.core.mail import send_mail
 from django.utils import timezone
 from .forms import UploadFileForm, FolderScanForm
 from .models import ScanLog
@@ -27,7 +27,7 @@ SHARED_KEY_COOLDOWN = 16
 SHARED_KEY_CACHE_KEY = 'vt_shared_last_call'
 VT_KEY_PATTERN = re.compile(r'^[0-9a-fA-F]{64}$')
 
-CACHE_FRESH_DAYS = 0  # 임시 테스트용
+CACHE_FRESH_DAYS = 0
 
 ADMIN_NOTIFY_EMAIL = 'a39161026@gmail.com'
 
@@ -93,20 +93,40 @@ def perform_scan(file_path, form_api_key):
 
 
 def notify_malicious_detected(file_name, status, detections, total, requested_by):
-    try:
-        send_mail(
-            subject=f"[보안 스캐너] 악성 파일 탐지: {file_name}",
-            message=(
+    api_key = os.environ.get('SENDGRID_API_KEY', '')
+    if not api_key:
+        print("MAIL SKIP: SENDGRID_API_KEY 없음")
+        return
+
+    payload = {
+        "personalizations": [{"to": [{"email": ADMIN_NOTIFY_EMAIL}]}],
+        "from": {"email": ADMIN_NOTIFY_EMAIL},
+        "subject": f"[보안 스캐너] 악성 파일 탐지: {file_name}",
+        "content": [{
+            "type": "text/plain",
+            "value": (
                 f"파일명: {file_name}\n"
                 f"판정: {status}\n"
                 f"탐지: {detections} / {total} 엔진\n"
                 f"요청 사용자: {requested_by}\n"
                 f"확인 시각: {timezone.now().strftime('%Y-%m-%d %H:%M:%S')}\n"
             ),
-            from_email=ADMIN_NOTIFY_EMAIL,
-            recipient_list=[ADMIN_NOTIFY_EMAIL],
-            fail_silently=False,
+        }],
+    }
+    try:
+        resp = requests.post(
+            "https://api.sendgrid.com/v3/mail/send",
+            headers={
+                "Authorization": f"Bearer {api_key}",
+                "Content-Type": "application/json",
+            },
+            json=payload,
+            timeout=10,
         )
+        if resp.status_code >= 300:
+            print(f"MAIL ERROR: SendGrid 응답 {resp.status_code} - {resp.text[:300]}")
+        else:
+            print(f"MAIL OK: SendGrid 응답 {resp.status_code}")
     except Exception as mail_error:
         print(f"MAIL ERROR: {mail_error}")
 
