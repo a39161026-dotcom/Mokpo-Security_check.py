@@ -1,6 +1,7 @@
 ﻿import os
 import sys
 import time
+import re
 
 from django.shortcuts import render, redirect
 from django.http import HttpResponse
@@ -20,18 +21,17 @@ UPLOAD_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file
 
 SHARED_KEY_COOLDOWN = 16
 SHARED_KEY_CACHE_KEY = 'vt_shared_last_call'
+VT_KEY_PATTERN = re.compile(r'^[0-9a-fA-F]{64}$')
 
 
 def get_effective_api_key(user_provided_key):
-    """사용자가 직접 키를 입력했으면 그 키를(own=True), 아니면 서버 공용 키를(own=False) 반환."""
     user_provided_key = (user_provided_key or '').strip()
-    if user_provided_key:
+    if user_provided_key and VT_KEY_PATTERN.match(user_provided_key):
         return user_provided_key, True
     return os.environ.get('VT_API_KEY', '').strip(), False
 
 
 def check_shared_throttle():
-    """공용 키를 쓸 때만 호출. 너무 빠른 연속 요청이면 안내 메시지를, 괜찮으면 None을 반환."""
     last = cache.get(SHARED_KEY_CACHE_KEY)
     now = time.time()
     if last and (now - last) < SHARED_KEY_COOLDOWN:

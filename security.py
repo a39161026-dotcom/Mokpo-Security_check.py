@@ -38,7 +38,6 @@ def query_virustotal(sha256_hash: str, api_key: str) -> Dict[str, Any]:
 
     headers = {"x-apikey": api_key}
     url = VT_API_URL.format(sha256_hash)
-    print(f"[DEBUG-KEY] repr={api_key!r} len={len(api_key)}")
 
     try:
         response = requests.get(url, headers=headers, timeout=10)

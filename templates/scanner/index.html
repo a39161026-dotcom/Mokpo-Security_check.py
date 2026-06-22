@@ -111,7 +111,7 @@
     <div class="top-grid">
         <div class="box">
             <h3 style="color:#0A9396">🔍 파일 직접 스캔</h3>
-            <form method="post" enctype="multipart/form-data">
+            <form method="post" enctype="multipart/form-data" autocomplete="off">
                 {% csrf_token %}
                 <input type="hidden" name="action" value="scan">
                 <label>📁 파일 선택</label>
@@ -138,7 +138,7 @@
 
         <div class="box">
             <h3 style="color:#6A4C93">📂 다중 파일 스캔</h3>
-            <form method="post" enctype="multipart/form-data">
+            <form method="post" enctype="multipart/form-data" autocomplete="off">
                 {% csrf_token %}
                 <input type="hidden" name="action" value="folder_scan">
                 <label>📁 파일 선택 (여러 개 동시 선택 가능)</label>
@@ -146,7 +146,7 @@
                 <details class="adv-key">
                     <summary>⚙️ 고급설정: 내 API 키 직접 사용</summary>
                     <p class="adv-hint">비워두면 서버 공용 키로 자동 검사됩니다. 파일이 많으면 본인 키 사용을 권장합니다.</p>
-                    <input type="password" name="api_key" placeholder="비워두면 공용 키 사용" style="width:100%; padding:10px; margin-bottom:10px; background:#1B2838; border:1px solid #6A4C93; border-radius:6px; color:white;">
+                    <input type="text" name="api_key" placeholder="비워두면 공용 키 사용" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" style="width:100%; padding:10px; margin-bottom:10px; background:#1B2838; border:1px solid #6A4C93; border-radius:6px; color:white;">
                 </details>
                 <button type="submit" class="btn btn-folder">📂 다중 파일 스캔</button>
             </form>
