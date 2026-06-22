@@ -2,6 +2,7 @@
 import sys
 import time
 import re
+from datetime import timedelta
 
 from django.shortcuts import render, redirect
 from django.http import HttpResponse
@@ -9,6 +10,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth import login
 from django.contrib.auth.forms import UserCreationForm
 from django.core.cache import cache
+from django.utils import timezone
 from .forms import UploadFileForm, FolderScanForm
 from .models import ScanLog
 
@@ -22,6 +24,8 @@ UPLOAD_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file
 SHARED_KEY_COOLDOWN = 16
 SHARED_KEY_CACHE_KEY = 'vt_shared_last_call'
 VT_KEY_PATTERN = re.compile(r'^[0-9a-fA-F]{64}$')
+
+CACHE_FRESH_DAYS = 7
 
 
 def get_effective_api_key(user_provided_key):
@@ -39,6 +43,49 @@ def check_shared_throttle():
         return f"공용 API 키 보호를 위해 {wait}초 후 다시 시도해주세요. (급하면 고급설정에서 본인 API 키 입력)"
     cache.set(SHARED_KEY_CACHE_KEY, now, timeout=SHARED_KEY_COOLDOWN + 10)
     return None
+
+
+def get_cached_scan(sha256_hash):
+    if not sha256_hash:
+        return None
+    cutoff = timezone.now() - timedelta(days=CACHE_FRESH_DAYS)
+    return (
+        ScanLog.objects.filter(sha256=sha256_hash, created_at__gte=cutoff)
+        .exclude(sha256='')
+        .order_by('-created_at')
+        .first()
+    )
+
+
+def perform_scan(file_path, form_api_key):
+    sha256 = sc.calculate_sha256(file_path)
+    cached = get_cached_scan(sha256)
+    if cached:
+        scan_result = {
+            "is_safe": cached.status in ("clean", "unknown"),
+            "status": cached.status,
+            "detections": cached.detections,
+            "total": cached.total_engines,
+            "sha256": cached.sha256,
+            "engines": cached.engine_results,
+        }
+        return scan_result, None, True
+
+    api_key, is_own_key = get_effective_api_key(form_api_key)
+    if not api_key:
+        return None, "서버에 API 키가 설정되어 있지 않습니다. 관리자에게 문의해주세요.", False
+
+    throttle_msg = None if is_own_key else check_shared_throttle()
+    if throttle_msg:
+        return None, throttle_msg, False
+
+    sc._SAVED_API_KEY = api_key
+    try:
+        scan_result = sc.check_security(file_path)
+    except Exception as sc_error:
+        print(f"WARN check_security failed: {sc_error}")
+        scan_result = {"is_safe": False, "status": "error", "detections": 0, "total": 0}
+    return scan_result, None, False
 
 
 @login_required
@@ -60,45 +107,29 @@ def index(request):
                 form = UploadFileForm(request.POST, request.FILES)
                 if form.is_valid():
                     uploaded_file = request.FILES['file']
-                    api_key, is_own_key = get_effective_api_key(form.cleaned_data.get('api_key'))
 
-                    throttle_msg = None if is_own_key else check_shared_throttle()
+                    os.makedirs(UPLOAD_DIR, exist_ok=True)
+                    file_path = os.path.join(UPLOAD_DIR, uploaded_file.name)
+                    with open(file_path, 'wb') as f:
+                        for chunk in uploaded_file.chunks():
+                            f.write(chunk)
 
-                    if not api_key:
+                    try:
+                        pre_analysis = fe.analyze_file(file_path)
+                    except Exception as fe_error:
+                        print(f"WARN pre_analysis failed: {fe_error}")
+                        pre_analysis = {"file_size": 0, "file_extension": "", "entropy": None, "risk_score": None}
+
+                    scan_result, blocked_msg, from_cache = perform_scan(file_path, form.cleaned_data.get('api_key'))
+
+                    if blocked_msg:
                         result = {
                             'filename': uploaded_file.name,
-                            'status': '서버에 API 키가 설정되어 있지 않습니다. 관리자에게 문의해주세요.',
-                            'is_safe': None,
-                            'risk_score': None,
-                        }
-                    elif throttle_msg:
-                        result = {
-                            'filename': uploaded_file.name,
-                            'status': throttle_msg,
+                            'status': blocked_msg,
                             'is_safe': None,
                             'risk_score': None,
                         }
                     else:
-                        os.makedirs(UPLOAD_DIR, exist_ok=True)
-                        file_path = os.path.join(UPLOAD_DIR, uploaded_file.name)
-                        with open(file_path, 'wb') as f:
-                            for chunk in uploaded_file.chunks():
-                                f.write(chunk)
-
-                        sc._SAVED_API_KEY = api_key
-
-                        try:
-                            pre_analysis = fe.analyze_file(file_path)
-                        except Exception as fe_error:
-                            print(f"WARN pre_analysis failed: {fe_error}")
-                            pre_analysis = {"file_size": 0, "file_extension": "", "entropy": None, "risk_score": None}
-
-                        try:
-                            scan_result = sc.check_security(file_path)
-                        except Exception as sc_error:
-                            print(f"WARN check_security failed: {sc_error}")
-                            scan_result = {"is_safe": False, "status": "error", "detections": 0, "total": 0}
-
                         is_safe = scan_result["is_safe"]
                         status = 'clean' if is_safe else scan_result["status"]
                         if status not in dict(ScanLog.STATUS_CHOICES):
@@ -127,9 +158,13 @@ def index(request):
                         except Exception as db_error:
                             print(f"DB ERROR: {db_error}")
 
+                        status_text = '✅ 안전' if is_safe else '🚨 악성 또는 스캔 오류'
+                        if from_cache:
+                            status_text += ' (🗄️ 최근 검사 결과 재사용)'
+
                         result = {
                             'filename': uploaded_file.name,
-                            'status': '✅ 안전' if is_safe else '🚨 악성 또는 스캔 오류',
+                            'status': status_text,
                             'is_safe': is_safe,
                             'risk_score': pre_analysis["risk_score"],
                         }
@@ -141,20 +176,10 @@ def index(request):
                                 pass
 
         elif action == 'folder_scan':
-            form_data = FolderScanForm(request.POST)
-            api_key, is_own_key = get_effective_api_key(request.POST.get('api_key', ''))
             uploaded_files = request.FILES.getlist('files')
+            form_api_key = request.POST.get('api_key', '')
 
-            throttle_msg = None if is_own_key else check_shared_throttle()
-
-            if not uploaded_files:
-                pass
-            elif not api_key:
-                folder_results = [{'filename': '-', 'status': '서버에 API 키가 설정되어 있지 않습니다.', 'is_safe': None, 'risk_score': None}]
-            elif throttle_msg:
-                folder_results = [{'filename': '-', 'status': throttle_msg, 'is_safe': None, 'risk_score': None}]
-            else:
-                sc._SAVED_API_KEY = api_key
+            if uploaded_files:
                 folder_results = []
                 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
@@ -170,11 +195,16 @@ def index(request):
                         print(f"WARN pre_analysis failed: {fe_error}")
                         pre_analysis = {"file_size": 0, "file_extension": "", "entropy": None, "risk_score": None}
 
-                    try:
-                        scan_result = sc.check_security(file_path)
-                    except Exception as sc_error:
-                        print(f"WARN folder check_security failed: {sc_error}")
-                        scan_result = {"is_safe": False, "status": "error", "detections": 0, "total": 0}
+                    scan_result, blocked_msg, from_cache = perform_scan(file_path, form_api_key)
+
+                    if blocked_msg:
+                        folder_results.append({
+                            'filename': uploaded_file.name,
+                            'status': blocked_msg,
+                            'is_safe': None,
+                            'risk_score': None,
+                        })
+                        continue
 
                     is_safe = scan_result["is_safe"]
                     status = 'clean' if is_safe else scan_result["status"]
@@ -200,9 +230,13 @@ def index(request):
                     except Exception as db_error:
                         print(f"DB folder ERROR: {db_error}")
 
+                    status_text = '✅ 안전' if is_safe else '🚨 악성/오류'
+                    if from_cache:
+                        status_text += ' (🗄️ 캐시)'
+
                     folder_results.append({
                         'filename': uploaded_file.name,
-                        'status': '✅ 안전' if is_safe else '🚨 악성/오류',
+                        'status': status_text,
                         'is_safe': is_safe,
                         'risk_score': pre_analysis["risk_score"],
                     })
@@ -231,8 +265,6 @@ def index(request):
 @login_required
 def dashboard(request):
     import json
-    from datetime import timedelta
-    from django.utils import timezone
     from django.db.models import Avg, Count
     from django.db.models.functions import TruncDate
 
