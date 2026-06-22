@@ -1,4 +1,4 @@
-from pathlib import Path
+﻿from pathlib import Path
 import os
 import dj_database_url
 
@@ -82,11 +82,12 @@ LOGOUT_REDIRECT_URL = '/accounts/login/'
 LOGIN_URL = '/accounts/login/'
 PASSWORD_CHANGE_REDIRECT_URL = '/'
 
-# 이메일 설정 (SendGrid)
+# ?대찓???ㅼ젙 (SendGrid)
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'smtp.sendgrid.net'
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
 EMAIL_HOST_USER = 'apikey'
 EMAIL_HOST_PASSWORD = os.environ.get('SENDGRID_API_KEY', '')
-DEFAULT_FROM_EMAIL = os.environ.get('EMAIL_HOST_USER', '')
+EMAIL_TIMEOUT = 10
+DEFAULT_FROM_EMAIL = 'a39161016@gmail.com'

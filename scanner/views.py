@@ -1,4 +1,5 @@
-﻿import os
+﻿import csv
+import os
 import sys
 import time
 import re
@@ -10,6 +11,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth import login
 from django.contrib.auth.forms import UserCreationForm
 from django.core.cache import cache
+from django.core.mail import send_mail
 from django.utils import timezone
 from .forms import UploadFileForm, FolderScanForm
 from .models import ScanLog
@@ -26,6 +28,8 @@ SHARED_KEY_CACHE_KEY = 'vt_shared_last_call'
 VT_KEY_PATTERN = re.compile(r'^[0-9a-fA-F]{64}$')
 
 CACHE_FRESH_DAYS = 7
+
+ADMIN_NOTIFY_EMAIL = 'a39161016@gmail.com'
 
 
 def get_effective_api_key(user_provided_key):
@@ -88,6 +92,25 @@ def perform_scan(file_path, form_api_key):
     return scan_result, None, False
 
 
+def notify_malicious_detected(file_name, status, detections, total, requested_by):
+    try:
+        send_mail(
+            subject=f"[보안 스캐너] 악성 파일 탐지: {file_name}",
+            message=(
+                f"파일명: {file_name}\n"
+                f"판정: {status}\n"
+                f"탐지: {detections} / {total} 엔진\n"
+                f"요청 사용자: {requested_by}\n"
+                f"확인 시각: {timezone.now().strftime('%Y-%m-%d %H:%M:%S')}\n"
+            ),
+            from_email=ADMIN_NOTIFY_EMAIL,
+            recipient_list=[ADMIN_NOTIFY_EMAIL],
+            fail_silently=False,
+        )
+    except Exception as mail_error:
+        print(f"MAIL ERROR: {mail_error}")
+
+
 @login_required
 def index(request):
     result = None
@@ -141,6 +164,7 @@ def index(request):
 
                         try:
                             ScanLog.objects.create(
+                                user=request.user,
                                 session_id=session_id,
                                 file_name=uploaded_file.name,
                                 status=status,
@@ -157,6 +181,13 @@ def index(request):
                             )
                         except Exception as db_error:
                             print(f"DB ERROR: {db_error}")
+
+                        if not is_safe and not from_cache:
+                            notify_malicious_detected(
+                                uploaded_file.name, status,
+                                scan_result["detections"], scan_result["total"],
+                                request.user.username,
+                            )
 
                         status_text = '✅ 안전' if is_safe else '🚨 악성 또는 스캔 오류'
                         if from_cache:
@@ -213,6 +244,7 @@ def index(request):
 
                     try:
                         ScanLog.objects.create(
+                            user=request.user,
                             session_id=session_id,
                             file_name=uploaded_file.name,
                             status=status,
@@ -229,6 +261,13 @@ def index(request):
                         )
                     except Exception as db_error:
                         print(f"DB folder ERROR: {db_error}")
+
+                    if not is_safe and not from_cache:
+                        notify_malicious_detected(
+                            uploaded_file.name, status,
+                            scan_result["detections"], scan_result["total"],
+                            request.user.username,
+                        )
 
                     status_text = '✅ 안전' if is_safe else '🚨 악성/오류'
                     if from_cache:
@@ -248,7 +287,7 @@ def index(request):
                             pass
 
     try:
-        logs = ScanLog.objects.all().order_by('-created_at')[:10]
+        logs = ScanLog.objects.filter(user=request.user).order_by('-created_at')[:10]
     except Exception as log_error:
         print(f"LOG ERROR: {log_error}")
         logs = []
@@ -269,7 +308,7 @@ def dashboard(request):
     from django.db.models.functions import TruncDate
 
     try:
-        logs = ScanLog.objects.all()
+        logs = ScanLog.objects.filter(user=request.user)
 
         search_query = request.GET.get('search', '').strip()
         status_filter = request.GET.get('status', '').strip()
@@ -285,12 +324,12 @@ def dashboard(request):
         malicious_count = logs.filter(status='malicious').count()
         suspicious_count = logs.filter(status='suspicious').count()
 
-        avg_risk = ScanLog.objects.filter(risk_score__isnull=False).aggregate(avg=Avg('risk_score'))['avg']
+        avg_risk = ScanLog.objects.filter(user=request.user, risk_score__isnull=False).aggregate(avg=Avg('risk_score'))['avg']
         avg_risk = round(avg_risk, 1) if avg_risk is not None else None
 
         since = timezone.now() - timedelta(days=14)
         daily = (
-            ScanLog.objects.filter(created_at__gte=since)
+            ScanLog.objects.filter(user=request.user, created_at__gte=since)
             .annotate(day=TruncDate('created_at'))
             .values('day', 'status')
             .annotate(count=Count('id'))
@@ -333,6 +372,28 @@ def dashboard(request):
     })
 
 
+@login_required
+def export_scan_logs_csv(request):
+    logs = ScanLog.objects.filter(user=request.user).order_by('-created_at')
+
+    response = HttpResponse(content_type='text/csv; charset=utf-8-sig')
+    response['Content-Disposition'] = 'attachment; filename="scan_logs.csv"'
+
+    writer = csv.writer(response)
+    writer.writerow(['스캔일시', '파일명', '상태', '탐지엔진', '전체엔진', 'AI위험도', 'SHA256'])
+    for log in logs:
+        writer.writerow([
+            log.created_at.strftime('%Y-%m-%d %H:%M:%S'),
+            log.file_name,
+            log.get_status_display(),
+            log.detections,
+            log.total_engines,
+            log.risk_score if log.risk_score is not None else '',
+            log.sha256,
+        ])
+    return response
+
+
 def register(request):
     if request.method == 'POST':
         form = UserCreationForm(request.POST)
@@ -348,7 +409,7 @@ def register(request):
 @login_required
 def scan_detail(request, pk):
     try:
-        log = ScanLog.objects.get(pk=pk)
+        log = ScanLog.objects.get(pk=pk, user=request.user)
     except ScanLog.DoesNotExist:
         return redirect('dashboard')
     safe_engines = max(log.total_engines - log.detections, 0)
@@ -358,7 +419,7 @@ def scan_detail(request, pk):
 @login_required
 def scan_report_pdf(request, pk):
     try:
-        log = ScanLog.objects.get(pk=pk)
+        log = ScanLog.objects.get(pk=pk, user=request.user)
     except ScanLog.DoesNotExist:
         return redirect('dashboard')
 

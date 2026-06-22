@@ -1,4 +1,4 @@
-from django.urls import path
+﻿from django.urls import path
 from . import views
 
 urlpatterns = [
@@ -7,4 +7,5 @@ urlpatterns = [
     path('register/', views.register, name='register'),
     path('scan/<int:pk>/', views.scan_detail, name='scan_detail'),
     path('scan/<int:pk>/report/', views.scan_report_pdf, name='scan_report_pdf'),
+    path('export/', views.export_scan_logs_csv, name='export_scan_logs_csv'),
 ]
