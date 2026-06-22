@@ -27,7 +27,7 @@ SHARED_KEY_COOLDOWN = 16
 SHARED_KEY_CACHE_KEY = 'vt_shared_last_call'
 VT_KEY_PATTERN = re.compile(r'^[0-9a-fA-F]{64}$')
 
-CACHE_FRESH_DAYS = 0
+CACHE_FRESH_DAYS = 7
 
 ADMIN_NOTIFY_EMAIL = 'a39161026@gmail.com'
 
