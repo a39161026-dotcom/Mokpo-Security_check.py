@@ -22,7 +22,6 @@ REQUEST_DELAY  = 15
 _SAVED_API_KEY = ""
 
 def calculate_sha256(filepath: str) -> Optional[str]:
-    """파일의 SHA256 해시값을 계산합니다."""
     sha256 = hashlib.sha256()
     try:
         with open(filepath, "rb") as f:
@@ -30,16 +29,16 @@ def calculate_sha256(filepath: str) -> Optional[str]:
                 sha256.update(chunk)
         return sha256.hexdigest()
     except (PermissionError, OSError) as e:
-        print(f"  [오류] 해시 계산 실패: {filepath} -> {e}")
+        print(f"  [error] hash failed: {filepath} -> {e}")
         return None
 
 def query_virustotal(sha256_hash: str, api_key: str) -> Dict[str, Any]:
-    """VirusTotal API로 해시값을 조회합니다."""
     if not api_key:
         return {"status": "error", "detections": 0, "total": 0, "engines": [], "message": "API key missing"}
 
     headers = {"x-apikey": api_key}
     url = VT_API_URL.format(sha256_hash)
+    print(f"[DEBUG-KEY] repr={api_key!r} len={len(api_key)}")
 
     try:
         response = requests.get(url, headers=headers, timeout=10)
@@ -61,8 +60,6 @@ def query_virustotal(sha256_hash: str, api_key: str) -> Dict[str, Any]:
                 status = "clean"
 
             raw_engine_results = attrs.get("last_analysis_results", {})
-            print(f"[DEBUG-RAW] attrs keys: {list(attrs.keys())}")
-            print(f"[DEBUG-RAW] last_analysis_results type: {type(raw_engine_results)}, count: {len(raw_engine_results)}")
             flagged_engines = [
                 {
                     "engine": name,
@@ -72,7 +69,6 @@ def query_virustotal(sha256_hash: str, api_key: str) -> Dict[str, Any]:
                 for name, info in raw_engine_results.items()
                 if info.get("category") in ("malicious", "suspicious")
             ]
-            print(f"[DEBUG-RAW] flagged_engines count: {len(flagged_engines)}")
 
             return {
                 "status": status,
@@ -85,24 +81,23 @@ def query_virustotal(sha256_hash: str, api_key: str) -> Dict[str, Any]:
             return {"status": "unknown", "detections": 0, "total": 0, "engines": []}
 
         elif response.status_code == 401:
-            print("  [오류] API 키가 유효하지 않습니다.")
+            print("  [error] invalid api key")
             return {"status": "error", "detections": 0, "total": 0, "engines": []}
 
         elif response.status_code == 429:
-            print("  [경고] API 요청 한도 초과. 60초 대기 후 재시도...")
+            print("  [warn] rate limited, retry after 60s")
             time.sleep(60)
             return query_virustotal(sha256_hash, api_key)
 
         else:
-            print(f"  [오류] VT 응답 코드: {response.status_code}")
+            print(f"  [error] VT response code: {response.status_code}")
             return {"status": "error", "detections": 0, "total": 0, "engines": []}
 
     except requests.RequestException as e:
-        print(f"  [오류] 네트워크 오류: {e}")
+        print(f"  [error] network error: {e}")
         return {"status": "error", "detections": 0, "total": 0, "engines": []}
 
 def quarantine_file(filepath: str) -> Optional[str]:
-    """위협 파일을 격리 폴더로 이동합니다."""
     try:
         os.makedirs(QUARANTINE_DIR, exist_ok=True)
         filename = os.path.basename(filepath)
@@ -115,24 +110,24 @@ def quarantine_file(filepath: str) -> Optional[str]:
         shutil.move(filepath, str(dest))
         return str(dest)
     except Exception as e:
-        print(f"  [오류] 격리 실패: {e}")
+        print(f"  [error] quarantine failed: {e}")
         return None
 
 STATUS_ICON = {
-    "clean": "안전", "suspicious": "의심", "malicious": "악성",
-    "unknown": "미등록", "error": "오류"
+    "clean": "ok", "suspicious": "warn", "malicious": "danger",
+    "unknown": "unknown", "error": "error"
 }
 
 def print_result(filename: str, status: str, detections: int, total: int, quarantined: bool):
     icon = STATUS_ICON.get(status, "?")
     det = f"({detections}/{total})" if total > 0 else ""
-    qstr = " -> [격리 완료]" if quarantined else ""
+    qstr = " -> [quarantined]" if quarantined else ""
     print(f"  {icon} {det}  {filename}{qstr}")
 
 def scan_directory(target_dir: str, api_key: str) -> List[Dict]:
     target_path = Path(target_dir).resolve()
     if not target_path.exists():
-        print(f"[오류] 경로를 찾을 수 없습니다: {target_dir}")
+        print(f"[error] path not found: {target_dir}")
         return []
 
     quarantine_path = Path(QUARANTINE_DIR).resolve()
@@ -140,10 +135,10 @@ def scan_directory(target_dir: str, api_key: str) -> List[Dict]:
              if f.is_file() and not str(f.resolve()).startswith(str(quarantine_path))]
 
     if not files:
-        print("스캔할 파일이 없습니다.")
+        print("no files to scan")
         return []
 
-    print(f"총 {len(files)}개 파일 스캔 시작...")
+    print(f"scanning {len(files)} files...")
     results = []
 
     for idx, filepath in enumerate(files, 1):
@@ -185,15 +180,12 @@ def save_report(results: List[Dict]):
     }
     with open(REPORT_FILE, "w", encoding="utf-8") as f:
         json.dump({"summary": summary, "details": results}, f, ensure_ascii=False, indent=2)
-    print(f"보고서 저장 완료: {REPORT_FILE}")
+    print(f"report saved: {REPORT_FILE}")
 
 def check_security(file_name: str) -> Dict[str, Any]:
-    """
-    파일 보안 검사 실행.
-    """
     global _SAVED_API_KEY
     if not _SAVED_API_KEY:
-        _SAVED_API_KEY = input("VirusTotal API 키를 입력하세요: ").strip()
+        _SAVED_API_KEY = input("VirusTotal API key: ").strip()
 
     sha256 = calculate_sha256(file_name)
     if not sha256:
@@ -201,7 +193,6 @@ def check_security(file_name: str) -> Dict[str, Any]:
 
     result = query_virustotal(sha256, _SAVED_API_KEY)
     print_result(os.path.basename(file_name), result["status"], result["detections"], result["total"], False)
-    print(f"[DEBUG-RAW] check_security return - result keys: {list(result.keys())}, engines count: {len(result.get('engines', []))}")
 
     is_safe = result["status"] in ("clean", "unknown")
     return {
@@ -215,10 +206,10 @@ def check_security(file_name: str) -> Dict[str, Any]:
 
 def quarantine(file_name: str):
     dest = quarantine_file(file_name)
-    if dest: print(f"  격리 완료: {os.path.basename(file_name)}")
+    if dest: print(f"  quarantined: {os.path.basename(file_name)}")
 
 if __name__ == "__main__":
-    api_input = input("API 키: ").strip()
-    target_input = input("폴더 (기본 .): ").strip() or "."
+    api_input = input("API key: ").strip()
+    target_input = input("folder (default .): ").strip() or "."
     scan_results = scan_directory(target_input, api_input)
     if scan_results: save_report(scan_results)
