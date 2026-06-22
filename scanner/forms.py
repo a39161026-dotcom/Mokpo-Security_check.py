@@ -1,4 +1,26 @@
 ﻿from django import forms
+from django.contrib.auth.forms import UserCreationForm
+from django.contrib.auth.models import User
+
+
+class SignUpForm(UserCreationForm):
+    email = forms.EmailField(
+        label='이메일 (악성 파일 탐지 알림용)',
+        required=True,
+        widget=forms.EmailInput(attrs={'placeholder': '알림 받을 이메일 주소'}),
+    )
+
+    class Meta:
+        model = User
+        fields = ('username', 'email', 'password1', 'password2')
+
+    def save(self, commit=True):
+        user = super().save(commit=False)
+        user.email = self.cleaned_data['email']
+        if commit:
+            user.save()
+        return user
+
 
 class UploadFileForm(forms.Form):
     api_key = forms.CharField(

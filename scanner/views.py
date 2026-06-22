@@ -10,10 +10,9 @@ from django.shortcuts import render, redirect
 from django.http import HttpResponse
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import login
-from django.contrib.auth.forms import UserCreationForm
 from django.core.cache import cache
 from django.utils import timezone
-from .forms import UploadFileForm, FolderScanForm
+from .forms import UploadFileForm, FolderScanForm, SignUpForm
 from .models import ScanLog
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -92,14 +91,17 @@ def perform_scan(file_path, form_api_key):
     return scan_result, None, False
 
 
-def notify_malicious_detected(file_name, status, detections, total, requested_by):
+def notify_malicious_detected(file_name, status, detections, total, requested_by, recipient_email):
     api_key = os.environ.get('SENDGRID_API_KEY', '')
     if not api_key:
         print("MAIL SKIP: SENDGRID_API_KEY 없음")
         return
+    if not recipient_email:
+        print("MAIL SKIP: 수신자 이메일 없음")
+        return
 
     payload = {
-        "personalizations": [{"to": [{"email": ADMIN_NOTIFY_EMAIL}]}],
+        "personalizations": [{"to": [{"email": recipient_email}]}],
         "from": {"email": ADMIN_NOTIFY_EMAIL},
         "subject": f"[보안 스캐너] 악성 파일 탐지: {file_name}",
         "content": [{
@@ -126,7 +128,7 @@ def notify_malicious_detected(file_name, status, detections, total, requested_by
         if resp.status_code >= 300:
             print(f"MAIL ERROR: SendGrid 응답 {resp.status_code} - {resp.text[:300]}")
         else:
-            print(f"MAIL OK: SendGrid 응답 {resp.status_code}")
+            print(f"MAIL OK: SendGrid 응답 {resp.status_code} -> {recipient_email}")
     except Exception as mail_error:
         print(f"MAIL ERROR: {mail_error}")
 
@@ -207,6 +209,7 @@ def index(request):
                                 uploaded_file.name, status,
                                 scan_result["detections"], scan_result["total"],
                                 request.user.username,
+                                request.user.email or ADMIN_NOTIFY_EMAIL,
                             )
 
                         status_text = '✅ 안전' if is_safe else '🚨 악성 또는 스캔 오류'
@@ -287,6 +290,7 @@ def index(request):
                             uploaded_file.name, status,
                             scan_result["detections"], scan_result["total"],
                             request.user.username,
+                            request.user.email or ADMIN_NOTIFY_EMAIL,
                         )
 
                     status_text = '✅ 안전' if is_safe else '🚨 악성/오류'
@@ -416,13 +420,13 @@ def export_scan_logs_csv(request):
 
 def register(request):
     if request.method == 'POST':
-        form = UserCreationForm(request.POST)
+        form = SignUpForm(request.POST)
         if form.is_valid():
             user = form.save()
             login(request, user)
             return redirect('index')
     else:
-        form = UserCreationForm()
+        form = SignUpForm()
     return render(request, 'registration/register.html', {'form': form})
 
 
