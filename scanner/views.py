@@ -60,9 +60,9 @@ def get_cached_scan(sha256_hash):
     )
 
 
-def perform_scan(file_path, form_api_key):
+def perform_scan(file_path, form_api_key, force=False):
     sha256 = sc.calculate_sha256(file_path)
-    cached = get_cached_scan(sha256)
+    cached = None if force else get_cached_scan(sha256)
     if cached:
         scan_result = {
             "is_safe": cached.status in ("clean", "unknown"),
@@ -165,7 +165,10 @@ def index(request):
                         print(f"WARN pre_analysis failed: {fe_error}")
                         pre_analysis = {"file_size": 0, "file_extension": "", "entropy": None, "risk_score": None}
 
-                    scan_result, blocked_msg, from_cache = perform_scan(file_path, form.cleaned_data.get('api_key'))
+                    scan_result, blocked_msg, from_cache = perform_scan(
+                        file_path, form.cleaned_data.get('api_key'),
+                        force=form.cleaned_data.get('force_rescan', False)
+                    )
 
                     if blocked_msg:
                         result = {
@@ -232,6 +235,7 @@ def index(request):
         elif action == 'folder_scan':
             uploaded_files = request.FILES.getlist('files')
             form_api_key = request.POST.get('api_key', '')
+            force_rescan = bool(request.POST.get('force_rescan'))
 
             if uploaded_files:
                 folder_results = []
@@ -249,7 +253,7 @@ def index(request):
                         print(f"WARN pre_analysis failed: {fe_error}")
                         pre_analysis = {"file_size": 0, "file_extension": "", "entropy": None, "risk_score": None}
 
-                    scan_result, blocked_msg, from_cache = perform_scan(file_path, form_api_key)
+                    scan_result, blocked_msg, from_cache = perform_scan(file_path, form_api_key, force=force_rescan)
 
                     if blocked_msg:
                         folder_results.append({

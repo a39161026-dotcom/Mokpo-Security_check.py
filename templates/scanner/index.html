@@ -117,9 +117,12 @@
                 <label>📁 파일 선택</label>
                 {{ form.file }}
                 <details class="adv-key">
-                    <summary>⚙️ 고급설정: 내 API 키 직접 사용</summary>
+                    <summary>⚙️ 고급설정</summary>
                     <p class="adv-hint">비워두면 서버 공용 키로 자동 검사됩니다. 공용 키 한도 초과 시에만 입력하세요.</p>
                     {{ form.api_key }}
+                    <label style="display:flex; align-items:center; gap:6px; font-size:0.85em; color:#94D2BD; margin-top:6px;">
+                        {{ form.force_rescan }} 캐시 무시하고 강제 재검사 (동일 파일 7일 캐시 건너뛰기)
+                    </label>
                 </details>
                 <button type="submit" class="btn btn-scan">🔍 스캔 시작</button>
             </form>
@@ -144,9 +147,12 @@
                 <label>📁 파일 선택 (여러 개 동시 선택 가능)</label>
                 <input type="file" name="files" multiple style="color:#94D2BD; margin-bottom:15px; width:100%;">
                 <details class="adv-key">
-                    <summary>⚙️ 고급설정: 내 API 키 직접 사용</summary>
+                    <summary>⚙️ 고급설정</summary>
                     <p class="adv-hint">비워두면 서버 공용 키로 자동 검사됩니다. 파일이 많으면 본인 키 사용을 권장합니다.</p>
                     <input type="text" name="api_key" placeholder="비워두면 공용 키 사용" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" style="width:100%; padding:10px; margin-bottom:10px; background:#1B2838; border:1px solid #6A4C93; border-radius:6px; color:white;">
+                    <label style="display:flex; align-items:center; gap:6px; font-size:0.85em; color:#94D2BD; margin-top:6px;">
+                        <input type="checkbox" name="force_rescan"> 캐시 무시하고 강제 재검사 (동일 파일 7일 캐시 건너뛰기)
+                    </label>
                 </details>
                 <button type="submit" class="btn btn-folder">📂 다중 파일 스캔</button>
             </form>

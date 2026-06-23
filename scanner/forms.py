@@ -38,6 +38,10 @@ class UploadFileForm(forms.Form):
         max_length=100
     )
     file = forms.FileField(label='파일 선택', required=False)
+    force_rescan = forms.BooleanField(
+        label='캐시 무시하고 강제 재검사',
+        required=False,
+    )
 
 class FolderScanForm(forms.Form):
     api_key = forms.CharField(
