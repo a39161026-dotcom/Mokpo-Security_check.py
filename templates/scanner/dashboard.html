@@ -70,6 +70,29 @@
             </div>
         </div>
 
+        <!-- 위협 유형 Top5 -->
+        {% if top_threats %}
+        <div class="card shadow mb-4">
+            <div class="card-header"><strong>🦠 자주 발견된 위협 유형 Top 5</strong></div>
+            <div class="card-body">
+                <table class="table table-dark table-hover mb-0">
+                    <thead>
+                        <tr><th>순위</th><th>위협 유형</th><th>발견 건수</th></tr>
+                    </thead>
+                    <tbody>
+                        {% for label, count in top_threats %}
+                        <tr>
+                            <td>{{ forloop.counter }}</td>
+                            <td>{{ label }}</td>
+                            <td><span class="badge" style="background:#ff6b6b;">{{ count }}건</span></td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        {% endif %}
+
         <!-- 검색 & 필터 -->
         <div class="card shadow mb-3">
             <div class="card-body search-box">
@@ -190,4 +213,3 @@
     </script>
 </body>
 </html>
-

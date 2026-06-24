@@ -30,6 +30,36 @@ CACHE_FRESH_DAYS = 7
 
 ADMIN_NOTIFY_EMAIL = 'a39161026@gmail.com'
 
+THREAT_KEYWORDS = [
+    ("eicar", "EICAR 테스트 파일"),
+    ("ransom", "랜섬웨어(Ransomware)"),
+    ("trojan", "트로이목마(Trojan)"),
+    ("worm", "웜(Worm)"),
+    ("backdoor", "백도어(Backdoor)"),
+    ("spyware", "스파이웨어(Spyware)"),
+    ("adware", "애드웨어(Adware)"),
+    ("rootkit", "루트킷(Rootkit)"),
+    ("downloader", "다운로더(Downloader)"),
+    ("virus", "바이러스(Virus)"),
+    ("pup", "불필요한 프로그램(PUP)"),
+]
+
+
+def classify_threat(engine_results):
+    if not engine_results:
+        return "기타 악성코드"
+    from collections import Counter
+    votes = Counter()
+    for entry in engine_results:
+        result_text = (entry.get("result") or "").lower()
+        for keyword, label in THREAT_KEYWORDS:
+            if keyword in result_text:
+                votes[label] += 1
+                break
+    if not votes:
+        return "기타 악성코드"
+    return votes.most_common(1)[0][0]
+
 
 def get_effective_api_key(user_provided_key):
     user_provided_key = (user_provided_key or '').strip()
@@ -374,6 +404,15 @@ def dashboard(request):
         trend_malicious = [trend_map[d]['malicious'] for d in trend_labels]
         trend_suspicious = [trend_map[d]['suspicious'] for d in trend_labels]
 
+        from collections import Counter
+        threat_counter = Counter()
+        threat_logs = ScanLog.objects.filter(
+            user=request.user, status__in=['malicious', 'suspicious']
+        ).only('engine_results')
+        for t_log in threat_logs:
+            threat_counter[classify_threat(t_log.engine_results)] += 1
+        top_threats = threat_counter.most_common(5)
+
     except Exception as dash_error:
         print(f"DASHBOARD ERROR: {dash_error}")
         logs = []
@@ -384,6 +423,7 @@ def dashboard(request):
         search_query = ''
         status_filter = ''
         trend_labels, trend_clean, trend_malicious, trend_suspicious = [], [], [], []
+        top_threats = []
 
     return render(request, 'scanner/dashboard.html', {
         'logs': logs,
@@ -397,6 +437,7 @@ def dashboard(request):
         'trend_clean_json': json.dumps(trend_clean),
         'trend_malicious_json': json.dumps(trend_malicious),
         'trend_suspicious_json': json.dumps(trend_suspicious),
+        'top_threats': top_threats,
     })
 
 
