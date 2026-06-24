@@ -463,6 +463,13 @@ def export_scan_logs_csv(request):
     return response
 
 
+@login_required
+def clear_scan_logs(request):
+    if request.method == 'POST':
+        ScanLog.objects.filter(user=request.user).delete()
+    return redirect('dashboard')
+
+
 def register(request):
     if request.method == 'POST':
         form = SignUpForm(request.POST)
@@ -502,3 +509,4 @@ def scan_report_pdf(request, pk):
     safe_name = "".join(c for c in log.file_name if c.isalnum() or c in "._-") or "scan"
     response['Content-Disposition'] = f'attachment; filename="report_{pk}_{safe_name}.pdf"'
     return response
+

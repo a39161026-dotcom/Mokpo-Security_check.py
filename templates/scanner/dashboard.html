@@ -125,6 +125,10 @@
                 <div>
                     <span class="badge bg-light text-dark me-2">총 {{ logs|length }}건</span>
                     <a href="/export/" class="btn btn-sm btn-outline-light">⬇️ CSV 내보내기</a>
+                    <form method="post" action="/clear/" style="display:inline;" onsubmit="return confirm('전체 스캔 기록을 삭제할까요? 이 작업은 되돌릴 수 없습니다.');">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-sm btn-outline-danger">🗑️ 전체 삭제</button>
+                    </form>
                 </div>
             </div>
             <div class="card-body p-0">
